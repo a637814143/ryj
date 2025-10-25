@@ -218,7 +218,7 @@ class StudentService {
   /**
    * 获取个人信息
    */
-  async getPersonalInfo(): Promise<ApiResponse<StudentInfo>> {
+  async getPersonalInfo(): Promise<ApiResponse<StudentInfo | null>> {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
       throw new Error('请先登录');
@@ -226,10 +226,13 @@ class StudentService {
     const user = JSON.parse(userStr);
     const userId = user.userInfo?.userId || user.userId;
 
-    const response = await apiClient.get('/student/personal-info', {
-      params: { userId }
-    });
-    return response.data;
+    const response = await apiClient.get<ApiResponse<StudentInfo | null>>(
+      '/student/personal-info',
+      {
+        params: { userId }
+      }
+    );
+    return response as unknown as ApiResponse<StudentInfo | null>;
   }
 
   /**
@@ -244,8 +247,11 @@ class StudentService {
       }
     }
 
-    const response = await apiClient.post('/student/personal-info', data);
-    return response.data;
+    const response = await apiClient.post<ApiResponse<StudentInfo>>(
+      '/student/personal-info',
+      data
+    );
+    return response as unknown as ApiResponse<StudentInfo>;
   }
 
   // ========== 教育经历 ==========

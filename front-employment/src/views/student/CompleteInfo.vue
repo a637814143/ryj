@@ -207,7 +207,7 @@
                 clearable
               >
                 <template #prefix>
-                  <el-icon><BriefcaseFilled /></el-icon>
+                  <el-icon><Suitcase /></el-icon>
                 </template>
               </el-input>
             </el-form-item>
@@ -277,8 +277,8 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { 
-  UserFilled, User, School, Suitcase, Reading, BriefcaseFilled,
+import {
+  UserFilled, User, School, Suitcase, Reading,
   ArrowLeft, ArrowRight, Check
 } from '@element-plus/icons-vue'
 import studentService, { type StudentInfo } from '@/api/student.service'

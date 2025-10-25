@@ -26,21 +26,6 @@ export interface StudentInfo {
   updateTime?: string;
 }
 
-// 个人信息（兼容旧接口）
-export interface PersonalInfo {
-  id?: number;
-  fullName: string;
-  gender: string;
-  birthDate: string;
-  phone: string;
-  email: string;
-  idNumber: string;
-  nation: string;
-  politicalStatus: string;
-  registeredResidence: string;
-  personalProfile: string;
-}
-
 // 教育经历
 export interface Education {
   id?: number;
@@ -233,17 +218,40 @@ class StudentService {
   /**
    * 获取个人信息
    */
-  async getPersonalInfo(): Promise<ApiResponse<PersonalInfo>> {
-    const response = await apiClient.get('/student/personal-info');
-    return response.data;
+  async getPersonalInfo(): Promise<ApiResponse<StudentInfo | null>> {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      throw new Error('请先登录');
+    }
+    const user = JSON.parse(userStr);
+    const userId = user.userInfo?.userId || user.userId;
+
+    const response = await apiClient.get<ApiResponse<StudentInfo | null>>(
+      '/student/personal-info',
+      {
+        params: { userId }
+      }
+    );
+    return response as unknown as ApiResponse<StudentInfo | null>;
   }
 
   /**
    * 更新个人信息
    */
-  async updatePersonalInfo(data: PersonalInfo): Promise<ApiResponse<PersonalInfo>> {
-    const response = await apiClient.post('/student/personal-info', data);
-    return response.data;
+  async updatePersonalInfo(data: StudentInfo): Promise<ApiResponse<StudentInfo>> {
+    if (!data.userId) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        data.userId = user.userInfo?.userId || user.userId;
+      }
+    }
+
+    const response = await apiClient.post<ApiResponse<StudentInfo>>(
+      '/student/personal-info',
+      data
+    );
+    return response as unknown as ApiResponse<StudentInfo>;
   }
 
   // ========== 教育经历 ==========

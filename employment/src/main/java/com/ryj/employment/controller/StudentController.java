@@ -100,6 +100,34 @@ public class StudentController {
             return Result.fail("获取学生信息失败");
         }
     }
+
+    /**
+     * 兼容前端/student/personal-info接口，按用户ID获取学生信息
+     * @param userId 用户ID
+     * @return 学生信息
+     */
+    @GetMapping("/personal-info")
+    public Result<Student> getPersonalInfo(@RequestParam(required = false) Integer userId) {
+        try {
+            if (userId == null) {
+                return Result.fail("用户ID不能为空");
+            }
+
+            Student student = studentService.getByUserId(userId);
+            if (student != null) {
+                if (student.getExamineState() == null || student.getExamineState().isEmpty()) {
+                    student.setExamineState("未提交");
+                }
+                return Result.success(student);
+            }
+
+            // 前端期望成功响应，这里返回空数据并提示
+            return Result.success(null, "暂无个人信息");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.fail("获取学生信息失败");
+        }
+    }
     
     /**
      * 新增学生信息
@@ -208,6 +236,36 @@ public class StudentController {
             
             Student savedStudent = studentService.saveOrUpdateStudent(student);
             return Result.success(savedStudent);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.fail("保存学生信息失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 兼容前端/student/personal-info接口的保存请求
+     * @param student 学生信息
+     * @return 保存后的学生信息
+     */
+    @PostMapping("/personal-info")
+    public Result<Student> savePersonalInfo(@RequestBody Student student) {
+        try {
+            if (student == null) {
+                return Result.fail("学生信息不能为空");
+            }
+            if (student.getUserId() == null) {
+                return Result.fail("用户ID不能为空");
+            }
+
+            if (student.getExamineState() == null || student.getExamineState().isEmpty()) {
+                student.setExamineState("待审核");
+            }
+            if (student.getRecommend() == null) {
+                student.setRecommend(0);
+            }
+
+            Student savedStudent = studentService.saveOrUpdateStudent(student);
+            return Result.success(savedStudent, "保存成功");
         } catch (Exception e) {
             e.printStackTrace();
             return Result.fail("保存学生信息失败：" + e.getMessage());

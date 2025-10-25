@@ -1,6 +1,32 @@
 -- 大学生就业管理系统核心数据表设计 (MySQL)
 
-CREATE TABLE sys_user (
+CREATE DATABASE IF NOT EXISTS employment_management DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE employment_management;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS system_notification;
+DROP TABLE IF EXISTS teacher_guidance;
+DROP TABLE IF EXISTS teacher;
+DROP TABLE IF EXISTS interview;
+DROP TABLE IF EXISTS job_application;
+DROP TABLE IF EXISTS job_requirement;
+DROP TABLE IF EXISTS job_posting;
+DROP TABLE IF EXISTS employer;
+DROP TABLE IF EXISTS resume_experience;
+DROP TABLE IF EXISTS resume_skill;
+DROP TABLE IF EXISTS resume;
+DROP TABLE IF EXISTS employment_intention_city;
+DROP TABLE IF EXISTS employment_intention;
+DROP TABLE IF EXISTS student_award;
+DROP TABLE IF EXISTS student_experience;
+DROP TABLE IF EXISTS student_education;
+DROP TABLE IF EXISTS student_profile;
+DROP TABLE IF EXISTS sys_user;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE IF NOT EXISTS sys_user (
     id            BIGINT PRIMARY KEY AUTO_INCREMENT,
     username      VARCHAR(50)  NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -13,7 +39,7 @@ CREATE TABLE sys_user (
     updated_at    DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE student_profile (
+CREATE TABLE IF NOT EXISTS student_profile (
     id                BIGINT PRIMARY KEY,
     gender            VARCHAR(10),
     age               INT,
@@ -23,7 +49,7 @@ CREATE TABLE student_profile (
     FOREIGN KEY (id) REFERENCES sys_user(id)
 );
 
-CREATE TABLE student_education (
+CREATE TABLE IF NOT EXISTS student_education (
     id            BIGINT PRIMARY KEY AUTO_INCREMENT,
     student_id    BIGINT      NOT NULL,
     school        VARCHAR(120) NOT NULL,
@@ -35,7 +61,7 @@ CREATE TABLE student_education (
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 );
 
-CREATE TABLE student_experience (
+CREATE TABLE IF NOT EXISTS student_experience (
     id            BIGINT PRIMARY KEY AUTO_INCREMENT,
     student_id    BIGINT      NOT NULL,
     title         VARCHAR(150) NOT NULL,
@@ -47,7 +73,7 @@ CREATE TABLE student_experience (
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 );
 
-CREATE TABLE student_award (
+CREATE TABLE IF NOT EXISTS student_award (
     id          BIGINT PRIMARY KEY AUTO_INCREMENT,
     student_id  BIGINT      NOT NULL,
     name        VARCHAR(150) NOT NULL,
@@ -57,7 +83,7 @@ CREATE TABLE student_award (
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 );
 
-CREATE TABLE employment_intention (
+CREATE TABLE IF NOT EXISTS employment_intention (
     id                BIGINT PRIMARY KEY AUTO_INCREMENT,
     student_id        BIGINT      NOT NULL UNIQUE,
     expected_position VARCHAR(120),
@@ -67,14 +93,14 @@ CREATE TABLE employment_intention (
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 );
 
-CREATE TABLE employment_intention_city (
+CREATE TABLE IF NOT EXISTS employment_intention_city (
     intention_id BIGINT NOT NULL,
     city         VARCHAR(80) NOT NULL,
     PRIMARY KEY (intention_id, city),
     FOREIGN KEY (intention_id) REFERENCES employment_intention(id)
 );
 
-CREATE TABLE resume (
+CREATE TABLE IF NOT EXISTS resume (
     id            BIGINT PRIMARY KEY AUTO_INCREMENT,
     student_id    BIGINT      NOT NULL,
     title         VARCHAR(150) NOT NULL,
@@ -85,7 +111,7 @@ CREATE TABLE resume (
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 );
 
-CREATE TABLE resume_skill (
+CREATE TABLE IF NOT EXISTS resume_skill (
     resume_id BIGINT      NOT NULL,
     skill     VARCHAR(80) NOT NULL,
     proficiency TINYINT,
@@ -93,7 +119,7 @@ CREATE TABLE resume_skill (
     FOREIGN KEY (resume_id) REFERENCES resume(id)
 );
 
-CREATE TABLE resume_experience (
+CREATE TABLE IF NOT EXISTS resume_experience (
     id          BIGINT PRIMARY KEY AUTO_INCREMENT,
     resume_id   BIGINT      NOT NULL,
     title       VARCHAR(150) NOT NULL,
@@ -104,7 +130,7 @@ CREATE TABLE resume_experience (
     FOREIGN KEY (resume_id) REFERENCES resume(id)
 );
 
-CREATE TABLE employer (
+CREATE TABLE IF NOT EXISTS employer (
     id             BIGINT PRIMARY KEY AUTO_INCREMENT,
     company_name   VARCHAR(150) NOT NULL,
     contact_person VARCHAR(100),
@@ -114,7 +140,7 @@ CREATE TABLE employer (
     website        VARCHAR(200)
 );
 
-CREATE TABLE job_posting (
+CREATE TABLE IF NOT EXISTS job_posting (
     id             BIGINT PRIMARY KEY AUTO_INCREMENT,
     employer_id    BIGINT      NOT NULL,
     title          VARCHAR(150) NOT NULL,
@@ -128,14 +154,14 @@ CREATE TABLE job_posting (
     FOREIGN KEY (employer_id) REFERENCES employer(id)
 );
 
-CREATE TABLE job_requirement (
+CREATE TABLE IF NOT EXISTS job_requirement (
     job_id      BIGINT      NOT NULL,
     requirement VARCHAR(200) NOT NULL,
     PRIMARY KEY (job_id, requirement),
     FOREIGN KEY (job_id) REFERENCES job_posting(id)
 );
 
-CREATE TABLE job_application (
+CREATE TABLE IF NOT EXISTS job_application (
     id           BIGINT PRIMARY KEY AUTO_INCREMENT,
     job_id       BIGINT      NOT NULL,
     student_id   BIGINT      NOT NULL,
@@ -148,7 +174,7 @@ CREATE TABLE job_application (
     FOREIGN KEY (resume_id) REFERENCES resume(id)
 );
 
-CREATE TABLE interview (
+CREATE TABLE IF NOT EXISTS interview (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT,
     job_id          BIGINT      NOT NULL,
     application_id  BIGINT      NOT NULL,
@@ -161,7 +187,7 @@ CREATE TABLE interview (
     FOREIGN KEY (application_id) REFERENCES job_application(id)
 );
 
-CREATE TABLE teacher (
+CREATE TABLE IF NOT EXISTS teacher (
     id          BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id     BIGINT      NOT NULL,
     department  VARCHAR(120),
@@ -170,7 +196,7 @@ CREATE TABLE teacher (
     FOREIGN KEY (user_id) REFERENCES sys_user(id)
 );
 
-CREATE TABLE teacher_guidance (
+CREATE TABLE IF NOT EXISTS teacher_guidance (
     id          BIGINT PRIMARY KEY AUTO_INCREMENT,
     teacher_id  BIGINT      NOT NULL,
     student_id  BIGINT      NOT NULL,
@@ -180,7 +206,7 @@ CREATE TABLE teacher_guidance (
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 );
 
-CREATE TABLE system_notification (
+CREATE TABLE IF NOT EXISTS system_notification (
     id          BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id     BIGINT      NOT NULL,
     category    ENUM('SYSTEM','INTERVIEW','APPLICATION','GUIDANCE') DEFAULT 'SYSTEM',

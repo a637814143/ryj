@@ -340,27 +340,10 @@ const studentInfo = reactive<StudentInfo>({
   userId: undefined
 })
 
-// 模拟数据函数
-const getMockStudentInfo = (): StudentInfo => {
-  return {
-    studentId: 1,
-    fullName: '张三',
-    gender: '男',
-    age: '22',
-    nation: '汉族',
-    idNumber: '110101199001011234',
-    registeredResidence: '北京市海淀区',
-    education: '本科',
-    graduationSchool: '北京大学',
-    major: '计算机科学与技术',
-    employmentIntention: '前端开发工程师',
-    personalProfile: '热爱编程，熟悉前端开发技术栈，有多个项目经验。',
-    socialPractice: '曾在字节跳动实习，负责前端开发工作。',
-    awards: '校级优秀学生奖学金',
-    certificate: '英语六级、计算机二级',
-    examineState: '未提交',
-    userId: 1
-  }
+const storedUser = localStorage.getItem('user')
+if (storedUser) {
+  const user = JSON.parse(storedUser)
+  studentInfo.userId = user.userInfo?.userId || user.userId
 }
 
 // 备份原始数据
@@ -422,28 +405,28 @@ const examineStateType = computed(() => {
 const loadStudentInfo = async () => {
   loading.value = true
   try {
-    const response = await studentService.getStudentInfo()
-    if (response.code === 200 && response.data) {
-      Object.assign(studentInfo, response.data)
-      originalInfo = JSON.parse(JSON.stringify(response.data))
+    const response = await studentService.getPersonalInfo()
+    if (response.code === 200) {
+      if (response.data) {
+        Object.assign(studentInfo, response.data)
+        originalInfo = JSON.parse(JSON.stringify(studentInfo))
+        isEditing.value = false
+      } else {
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+          const user = JSON.parse(userStr)
+          studentInfo.userId = user.userInfo?.userId || user.userId
+        }
+        originalInfo = JSON.parse(JSON.stringify(studentInfo))
+        ElMessage.info('暂无个人信息，请点击"编辑信息"按钮添加')
+        isEditing.value = true
+      }
     } else {
-      // 如果API返回成功但没有数据，使用模拟数据
-      ElMessage.info('使用默认模拟数据')
-      const mockData = getMockStudentInfo()
-      Object.assign(studentInfo, mockData)
-      originalInfo = JSON.parse(JSON.stringify(mockData))
+      ElMessage.error(response.message || '加载学生信息失败')
     }
   } catch (error: any) {
     console.error('加载学生信息失败:', error)
-    // API调用失败时使用模拟数据
-    ElMessage.warning('无法连接到服务器，显示模拟数据')
-    const mockData = getMockStudentInfo()
-    Object.assign(studentInfo, mockData)
-    originalInfo = JSON.parse(JSON.stringify(mockData))
-    if (error?.response?.status === 404) {
-      ElMessage.info('暂无个人信息，请点击"编辑信息"按钮添加')
-      isEditing.value = true
-    }
+    ElMessage.error(error?.response?.data?.message || '加载学生信息失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -505,7 +488,7 @@ const handleSave = async () => {
     studentInfo.examineState = '待审核'
     
     // 调用保存接口
-    const response = await studentService.saveStudentInfo(studentInfo)
+    const response = await studentService.updatePersonalInfo(studentInfo)
     
     if (response.code === 200) {
       ElMessage.success('保存成功！已提交审核，请等待管理员审核')

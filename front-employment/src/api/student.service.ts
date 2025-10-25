@@ -26,24 +26,6 @@ export interface StudentInfo {
   updateTime?: string;
 }
 
-// 个人信息（兼容旧接口）
-export interface PersonalInfo {
-  id?: number;
-  fullName: string;
-  gender: string;
-  birthDate: string;
-  phone: string;
-  email: string;
-  idNumber: string;
-  nation: string;
-  politicalStatus: string;
-  registeredResidence: string;
-  personalProfile: string;
-  userId?: number;
-  studentId?: number;
-  examineState?: string;
-}
-
 // 教育经历
 export interface Education {
   id?: number;
@@ -236,7 +218,7 @@ class StudentService {
   /**
    * 获取个人信息
    */
-  async getPersonalInfo(): Promise<ApiResponse<PersonalInfo>> {
+  async getPersonalInfo(): Promise<ApiResponse<StudentInfo>> {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
       throw new Error('请先登录');
@@ -253,7 +235,7 @@ class StudentService {
   /**
    * 更新个人信息
    */
-  async updatePersonalInfo(data: PersonalInfo): Promise<ApiResponse<PersonalInfo>> {
+  async updatePersonalInfo(data: StudentInfo): Promise<ApiResponse<StudentInfo>> {
     if (!data.userId) {
       const userStr = localStorage.getItem('user');
       if (userStr) {

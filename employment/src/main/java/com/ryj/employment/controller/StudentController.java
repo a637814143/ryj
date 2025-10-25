@@ -115,6 +115,9 @@ public class StudentController {
 
             Student student = studentService.getByUserId(userId);
             if (student != null) {
+                if (student.getExamineState() == null || student.getExamineState().isEmpty()) {
+                    student.setExamineState("未提交");
+                }
                 return Result.success(student);
             }
 

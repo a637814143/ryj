@@ -1,7 +1,0 @@
-package com.ryj.employment.service;
-
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.ryj.employment.entity.User;
-
-public interface UserService extends IService<User> {
-}

@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: employment-demo
+server:
+  port: 8080

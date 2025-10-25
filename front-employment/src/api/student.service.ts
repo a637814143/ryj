@@ -39,6 +39,9 @@ export interface PersonalInfo {
   politicalStatus: string;
   registeredResidence: string;
   personalProfile: string;
+  userId?: number;
+  studentId?: number;
+  examineState?: string;
 }
 
 // 教育经历
@@ -234,7 +237,16 @@ class StudentService {
    * 获取个人信息
    */
   async getPersonalInfo(): Promise<ApiResponse<PersonalInfo>> {
-    const response = await apiClient.get('/student/personal-info');
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      throw new Error('请先登录');
+    }
+    const user = JSON.parse(userStr);
+    const userId = user.userInfo?.userId || user.userId;
+
+    const response = await apiClient.get('/student/personal-info', {
+      params: { userId }
+    });
     return response.data;
   }
 
@@ -242,6 +254,14 @@ class StudentService {
    * 更新个人信息
    */
   async updatePersonalInfo(data: PersonalInfo): Promise<ApiResponse<PersonalInfo>> {
+    if (!data.userId) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        data.userId = user.userInfo?.userId || user.userId;
+      }
+    }
+
     const response = await apiClient.post('/student/personal-info', data);
     return response.data;
   }

@@ -13,7 +13,7 @@ public class HomeController {
     @GetMapping("/")
     public ApiResponse<Map<String, Object>> home() {
         Map<String, Object> info = new HashMap<>();
-        info.put("name", "大学生就业管理系统 API");
+        info.put("name", "高校就业管理系统 API");
         info.put("version", "1.0.0");
         info.put("status", "运行中");
         

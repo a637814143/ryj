@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试注册功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #4338ca;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .result.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+        .result.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+        pre {
+            background-color: #f9fafb;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试注册功能</h1>
+    <form id="registerForm">
+        <div class="form-group">
+            <label for="username">用户名 *</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码 *</label>
+            <input type="password" id="password" name="password" required minlength="6">
+        </div>
+        
+        <div class="form-group">
+            <label for="fullName">姓名 *</label>
+            <input type="text" id="fullName" name="fullName" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">邮箱 *</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">手机号</label>
+            <input type="tel" id="phone" name="phone">
+        </div>
+        
+        <div class="form-group">
+            <label for="role">角色</label>
+            <select id="role" name="role">
+                <option value="ADMIN">管理员</option>
+                <option value="STUDENT">学生</option>
+                <option value="TEACHER">教师</option>
+                <option value="EMPLOYER">企业</option>
+            </select>
+        </div>
+        
+        <button type="submit" id="submitBtn">注册</button>
+    </form>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            
+            // 获取表单数据
+            const formData = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                role: document.getElementById('role').value
+            };
+            
+            // 禁用按钮
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            resultDiv.style.display = 'none';
+            
+            try {
+                console.log('发送请求:', formData);
+                
+                const response = await fetch('http://localhost:8080/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                console.log('服务器响应:', data);
+                
+                // 显示结果
+                resultDiv.className = 'result ' + (data.code === 200 ? 'success' : 'error');
+                resultDiv.innerHTML = `
+                    <h3>${data.code === 200 ? '✅ 注册成功' : '❌ 注册失败'}</h3>
+                    <p><strong>消息:</strong> ${data.message}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                // 如果成功，清空表单
+                if (data.code === 200) {
+                    document.getElementById('registerForm').reset();
+                }
+                
+            } catch (error) {
+                console.error('请求失败:', error);
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ 请求失败</h3>
+                    <p><strong>错误:</strong> ${error.message}</p>
+                    <p>请确保后端服务正在运行（http://localhost:8080）</p>
+                `;
+            } finally {
+                // 恢复按钮
+                submitBtn.disabled = false;
+                submitBtn.textContent = '注册';
+            }
+        });
+    </script>
+</body>
+</html>
+

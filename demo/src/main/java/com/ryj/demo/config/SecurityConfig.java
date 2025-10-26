@@ -15,7 +15,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.disable())
+                .cors(cors -> {}) // 使用默认CORS配置（从WebConfig的CorsFilter）
                 .authorizeHttpRequests(auth -> auth
                         // 开发阶段：允许所有请求（生产环境需要配置具体的权限控制）
                         .anyRequest().permitAll()

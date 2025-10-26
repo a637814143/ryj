@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const showUserMenu = ref(false)
-const userMenuRef = ref(null)
+const userMenuRef = ref<HTMLElement | null>(null)
 const isLoggedIn = ref(false)
 const currentUser = ref<{ username?: string; fullName?: string } | null>(null)
 
@@ -45,8 +45,9 @@ const closeUserMenu = () => {
 }
 
 // 点击外部关闭菜单
-const handleClickOutside = (event) => {
-  if (userMenuRef.value && !userMenuRef.value.contains(event.target)) {
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as Node | null
+  if (userMenuRef.value && target && !userMenuRef.value.contains(target)) {
     closeUserMenu()
   }
 }
@@ -81,6 +82,22 @@ const logout = () => {
   router.push('/home')
 }
 
+const getStudentLink = (section: string) => {
+  const stored = localStorage.getItem('currentStudentId')
+  const query: Record<string, string> = {}
+  if (stored) {
+    query.studentId = stored
+  }
+  if (section) {
+    query.section = section
+  }
+  return {
+    name: 'student-dashboard',
+    params: section ? { section } : {},
+    query,
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   checkLoginStatus()
@@ -109,11 +126,12 @@ onUnmounted(() => {
         <div class="nav-dropdown">
           <span class="nav-link">学生专区 ▾</span>
           <div class="dropdown-menu">
-            <RouterLink to="/student/profile">个人档案</RouterLink>
-            <RouterLink to="/student/resume">简历管理</RouterLink>
-            <RouterLink to="/student/applications">求职申请</RouterLink>
-            <RouterLink to="/student/interviews">面试管理</RouterLink>
-            <RouterLink to="/student/intention">就业意向</RouterLink>
+            <RouterLink :to="getStudentLink('overview')">学生总览</RouterLink>
+            <RouterLink :to="getStudentLink('profile')">个人档案</RouterLink>
+            <RouterLink :to="getStudentLink('resume')">简历管理</RouterLink>
+            <RouterLink :to="getStudentLink('applications')">求职申请</RouterLink>
+            <RouterLink :to="getStudentLink('interviews')">面试管理</RouterLink>
+            <RouterLink :to="getStudentLink('intention')">就业意向</RouterLink>
           </div>
         </div>
         

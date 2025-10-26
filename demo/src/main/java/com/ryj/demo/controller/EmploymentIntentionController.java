@@ -1,54 +1,70 @@
 package com.ryj.demo.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryj.demo.common.ApiResponse;
 import com.ryj.demo.dto.EmploymentIntentionRequest;
-import com.ryj.demo.entity.EmploymentIntention;
-import com.ryj.demo.service.EmploymentIntentionCityService;
+import com.ryj.demo.dto.EmploymentIntentionResponse;
 import com.ryj.demo.service.EmploymentIntentionService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @RestController
-@RequestMapping("/api/employment-intentions")
-@RequiredArgsConstructor
+@RequestMapping("/api/employment-intention")
 public class EmploymentIntentionController {
 
     private final EmploymentIntentionService employmentIntentionService;
-    private final EmploymentIntentionCityService cityService;
 
-    @PostMapping
-    public ApiResponse<Map<String, Object>> createOrUpdate(@Valid @RequestBody EmploymentIntentionRequest request) {
-        EmploymentIntention intention = employmentIntentionService.getOne(new LambdaQueryWrapper<EmploymentIntention>().eq(EmploymentIntention::getStudentId, request.getStudentId()));
-        if (intention == null) {
-            intention = new EmploymentIntention();
-        }
-        intention.setStudentId(request.getStudentId());
-        intention.setExpectedPosition(request.getExpectedPosition());
-        intention.setSalaryRange(request.getSalaryRange());
-        intention.setWorkType(request.getWorkType());
-        intention.setNotes(request.getNotes());
-        employmentIntentionService.saveOrUpdate(intention);
-        cityService.replaceCities(intention.getId(), request.getCities());
-        Map<String, Object> result = new HashMap<>();
-        result.put("intention", intention);
-        result.put("cities", cityService.findByIntentionId(intention.getId()));
-        return ApiResponse.success(result);
+    public EmploymentIntentionController(EmploymentIntentionService employmentIntentionService) {
+        this.employmentIntentionService = employmentIntentionService;
     }
 
-    @GetMapping("/student/{studentId}")
-    public ApiResponse<Map<String, Object>> getByStudent(@PathVariable Long studentId) {
-        EmploymentIntention intention = employmentIntentionService.getOne(new LambdaQueryWrapper<EmploymentIntention>().eq(EmploymentIntention::getStudentId, studentId));
-        if (intention == null) {
-            return ApiResponse.success(Map.of());
+    /**
+     * 保存或更新就业意向
+     */
+    @PostMapping("/{studentId}")
+    public ApiResponse<EmploymentIntentionResponse> saveOrUpdateIntention(
+            @PathVariable Long studentId,
+            @Valid @RequestBody EmploymentIntentionRequest request) {
+        try {
+            EmploymentIntentionResponse response = employmentIntentionService.saveOrUpdateIntention(studentId, request);
+            return ApiResponse.success("保存成功", response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.failure(500, "保存失败：" + e.getMessage());
         }
-        Map<String, Object> result = new HashMap<>();
-        result.put("intention", intention);
-        result.put("cities", cityService.findByIntentionId(intention.getId()));
-        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取学生的就业意向
+     */
+    @GetMapping("/{studentId}")
+    public ApiResponse<EmploymentIntentionResponse> getIntention(@PathVariable Long studentId) {
+        try {
+            EmploymentIntentionResponse response = employmentIntentionService.getIntentionByStudentId(studentId);
+            if (response == null) {
+                return ApiResponse.success("未设置就业意向", null);
+            }
+            return ApiResponse.success("获取成功", response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.failure(500, "获取失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除就业意向
+     */
+    @DeleteMapping("/{studentId}")
+    public ApiResponse<Void> deleteIntention(@PathVariable Long studentId) {
+        try {
+            boolean deleted = employmentIntentionService.deleteIntentionByStudentId(studentId);
+            if (deleted) {
+                return ApiResponse.success("删除成功", null);
+            } else {
+                return ApiResponse.failure(404, "未找到就业意向");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.failure(500, "删除失败：" + e.getMessage());
+        }
     }
 }

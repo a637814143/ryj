@@ -4,7 +4,9 @@ import com.ryj.demo.auth.dto.LoginRequest;
 import com.ryj.demo.auth.dto.RegisterRequest;
 import com.ryj.demo.auth.dto.UserResponse;
 import com.ryj.demo.common.ApiResponse;
+import com.ryj.demo.entity.StudentProfile;
 import com.ryj.demo.entity.SysUser;
+import com.ryj.demo.service.StudentProfileService;
 import com.ryj.demo.service.SysUserService;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -21,10 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final SysUserService sysUserService;
+    private final StudentProfileService studentProfileService;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthController(SysUserService sysUserService, PasswordEncoder passwordEncoder) {
+    public AuthController(SysUserService sysUserService, StudentProfileService studentProfileService, PasswordEncoder passwordEncoder) {
         this.sysUserService = sysUserService;
+        this.studentProfileService = studentProfileService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -59,6 +63,12 @@ public class AuthController {
         try {
             boolean saved = sysUserService.save(user);
             if (saved) {
+                // 如果注册的是学生角色，自动创建对应的 student_profile 记录
+                if (role == SysUser.Role.STUDENT) {
+                    StudentProfile studentProfile = new StudentProfile();
+                    studentProfile.setId(user.getId()); // 使用 sys_user 的 ID 作为 student_profile 的 ID
+                    studentProfileService.save(studentProfile);
+                }
                 return ApiResponse.success("注册成功", UserResponse.from(user));
             } else {
                 return ApiResponse.failure(500, "注册失败");

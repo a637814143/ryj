@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const showUserMenu = ref(false)
-const userMenuRef = ref(null)
+const userMenuRef = ref<HTMLElement | null>(null)
 const isLoggedIn = ref(false)
 const currentUser = ref<{ username?: string; fullName?: string } | null>(null)
 
@@ -45,8 +45,9 @@ const closeUserMenu = () => {
 }
 
 // 点击外部关闭菜单
-const handleClickOutside = (event) => {
-  if (userMenuRef.value && !userMenuRef.value.contains(event.target)) {
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as Node | null
+  if (userMenuRef.value && target && !userMenuRef.value.contains(target)) {
     closeUserMenu()
   }
 }
@@ -109,6 +110,7 @@ onUnmounted(() => {
         <div class="nav-dropdown">
           <span class="nav-link">学生专区 ▾</span>
           <div class="dropdown-menu">
+            <RouterLink to="/student/overview">学生总览</RouterLink>
             <RouterLink to="/student/profile">个人档案</RouterLink>
             <RouterLink to="/student/resume">简历管理</RouterLink>
             <RouterLink to="/student/applications">求职申请</RouterLink>

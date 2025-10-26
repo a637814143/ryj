@@ -10,13 +10,21 @@ import lombok.Data;
 public class EmploymentIntention {
     @TableId(type = IdType.AUTO)
     private Long id;
+    
     private Long studentId;
+    
     private String expectedPosition;
+    
     private String salaryRange;
+    
     private WorkType workType;
+    
     private String notes;
-
+    
     public enum WorkType {
-        FULL_TIME, PART_TIME, INTERNSHIP, FLEXIBLE
+        FULL_TIME,
+        PART_TIME,
+        INTERNSHIP,
+        FLEXIBLE
     }
 }

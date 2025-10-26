@@ -1,7 +1,7 @@
 -- 大学生就业管理系统核心数据表设计 (MySQL)
 
-CREATE DATABASE IF NOT EXISTS employment_management DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE employment_management;
+CREATE DATABASE IF NOT EXISTS bb DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE bb;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS job_posting (
     location       VARCHAR(120) COMMENT '工作地点',
     work_type      ENUM('FULL_TIME','PART_TIME','INTERNSHIP','REMOTE') COMMENT '工作类型：全职/兼职/实习/远程',
     status         ENUM('OPEN','CLOSED','DRAFT') DEFAULT 'OPEN' COMMENT '岗位状态：开放/关闭/草稿',
-    published_date DATE        DEFAULT CURRENT_DATE COMMENT '职位发布时间',
+    published_date DATETIME    DEFAULT CURRENT_TIMESTAMP COMMENT '职位发布时间',
     closing_date   DATE COMMENT '职位截止日期',
     FOREIGN KEY (employer_id) REFERENCES employer(id)
 ) COMMENT='招聘岗位发布表';

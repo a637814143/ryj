@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("job_posting")
@@ -19,7 +20,7 @@ public class JobPosting {
     private String location;
     private WorkType workType;
     private Status status;
-    private LocalDate publishedDate;
+    private LocalDateTime publishedDate;
     private LocalDate closingDate;
 
     public enum WorkType {

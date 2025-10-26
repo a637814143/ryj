@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -21,7 +22,7 @@ public class JobPostingRequest {
     private String location;
     private JobPosting.WorkType workType;
     private JobPosting.Status status;
-    private LocalDate publishedDate;
+    private LocalDateTime publishedDate;
     private LocalDate closingDate;
     private List<String> requirements;
 }

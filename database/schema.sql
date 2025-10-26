@@ -5,6 +5,8 @@ USE bb;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS public_resource;
+DROP TABLE IF EXISTS public_search_history;
 DROP TABLE IF EXISTS system_notification;
 DROP TABLE IF EXISTS teacher_guidance;
 DROP TABLE IF EXISTS teacher;
@@ -205,6 +207,30 @@ CREATE TABLE IF NOT EXISTS teacher_guidance (
     FOREIGN KEY (teacher_id) REFERENCES teacher(id),
     FOREIGN KEY (student_id) REFERENCES student_profile(id)
 ) COMMENT='教师就业指导记录表';
+
+CREATE TABLE IF NOT EXISTS public_search_history (
+    id               BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID，自增',
+    user_id          BIGINT COMMENT '发起搜索的用户ID',
+    keyword          VARCHAR(200) NOT NULL COMMENT '搜索关键字',
+    role_filter      VARCHAR(60) COMMENT '角色筛选条件',
+    category_filter  VARCHAR(120) COMMENT '模块筛选条件',
+    location_filter  VARCHAR(120) COMMENT '地点筛选条件',
+    advanced_options TEXT COMMENT '高级筛选参数',
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '搜索时间'
+) COMMENT='公共模块搜索历史记录';
+
+CREATE TABLE IF NOT EXISTS public_resource (
+    id           BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID，自增',
+    uploader_id  BIGINT COMMENT '上传人用户ID',
+    file_name    VARCHAR(255) NOT NULL COMMENT '文件原始名称',
+    file_type    VARCHAR(120) COMMENT '文件类型',
+    file_size    BIGINT COMMENT '文件大小(字节)',
+    storage_path VARCHAR(500) NOT NULL COMMENT '文件物理存储路径',
+    download_url VARCHAR(255) COMMENT '文件下载接口地址',
+    description  TEXT COMMENT '文件说明或备注',
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+    FOREIGN KEY (uploader_id) REFERENCES sys_user(id)
+) COMMENT='公共资料库文件表';
 
 CREATE TABLE IF NOT EXISTS system_notification (
     id          BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID，自增',

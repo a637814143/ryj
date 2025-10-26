@@ -1,5 +1,16 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+interface UserPayload {
+  id: number
+  username: string
+  fullName: string | null
+  email: string | null
+  phone: string | null
+  role: string | null
+  status: string | null
+}
 
 const form = reactive({
   username: '',
@@ -9,6 +20,7 @@ const form = reactive({
 const loading = ref(false)
 const message = ref('')
 const messageType = ref<'success' | 'error' | ''>('')
+const router = useRouter()
 
 const submit = async () => {
   if (!form.username || !form.password) {
@@ -33,8 +45,23 @@ const submit = async () => {
     const data = await response.json()
 
     if (response.ok && data.code === 200) {
-      message.value = data.message || '登录成功'
+      message.value = '登录成功，正在进入首页...'
       messageType.value = 'success'
+      const payload = (data.data && data.data.user) as UserPayload | undefined
+      if (payload) {
+        // 保存用户信息到 localStorage
+        localStorage.setItem('userInfo', JSON.stringify(payload))
+        // 如果后端返回了 token，保存 token
+        if (data.data.token) {
+          localStorage.setItem('token', data.data.token)
+        } else {
+          // 如果没有 token，创建一个临时标记表示已登录
+          localStorage.setItem('token', 'logged-in')
+        }
+      }
+      setTimeout(() => {
+        router.push({ name: 'home' })
+      }, 400)
     } else {
       message.value = data.message || '用户名或密码错误'
       messageType.value = 'error'
@@ -89,6 +116,7 @@ const submit = async () => {
   width: 100%;
   max-width: 420px;
   padding: 2rem 2rem;
+  margin: 0 auto;
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);

@@ -122,6 +122,7 @@ const submit = async () => {
   width: 100%;
   max-width: 500px;
   padding: 2rem 2rem;
+  margin: 0 auto;
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);

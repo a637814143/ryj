@@ -1,99 +1,85 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-
-const menu = [
-  { name: '概览', path: '/' },
-  { name: '学生中心', path: '/students' },
-  { name: '岗位广场', path: '/jobs' },
-  { name: '企业管理', path: '/employers' },
-  { name: '指导服务', path: '/teachers' },
-]
-
-const route = useRoute()
+import { RouterLink, RouterView } from 'vue-router'
+import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <template>
-  <div class="layout">
-    <aside class="sidebar">
-      <h1>就业管理系统</h1>
+  <header>
+    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+
+    <div class="wrapper">
+      <HelloWorld msg="You did it!" />
+
       <nav>
-        <RouterLink v-for="item in menu" :key="item.path" :to="item.path" :class="{ active: route.path === item.path }">
-          {{ item.name }}
-        </RouterLink>
+        <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/about">About</RouterLink>
       </nav>
-    </aside>
-    <main class="content">
-      <RouterView />
-    </main>
-  </div>
+    </div>
+  </header>
+
+  <RouterView />
 </template>
 
 <style scoped>
-.layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: 100vh;
-  background: #eef2ff;
-  color: #0f172a;
+header {
+  line-height: 1.5;
+  max-height: 100vh;
 }
 
-.sidebar {
-  background: #1e293b;
-  color: #e2e8f0;
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.logo {
+  display: block;
+  margin: 0 auto 2rem;
 }
 
-.sidebar h1 {
-  font-size: 20px;
-  margin: 0;
+nav {
+  width: 100%;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 2rem;
 }
 
-.sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+nav a.router-link-exact-active {
+  color: var(--color-text);
 }
 
-.sidebar a {
-  color: inherit;
-  text-decoration: none;
-  padding: 10px 12px;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+nav a.router-link-exact-active:hover {
+  background-color: transparent;
 }
 
-.sidebar a:hover {
-  background: rgba(148, 163, 184, 0.2);
+nav a {
+  display: inline-block;
+  padding: 0 1rem;
+  border-left: 1px solid var(--color-border);
 }
 
-.sidebar a.active {
-  background: #2563eb;
-  color: #fff;
+nav a:first-of-type {
+  border: 0;
 }
 
-.content {
-  overflow-y: auto;
-  background: #f1f5f9;
-}
-
-@media (max-width: 960px) {
-  .layout {
-    grid-template-columns: 1fr;
+@media (min-width: 1024px) {
+  header {
+    display: flex;
+    place-items: center;
+    padding-right: calc(var(--section-gap) / 2);
   }
 
-  .sidebar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+  .logo {
+    margin: 0 2rem 0 0;
   }
 
-  .sidebar nav {
-    flex-direction: row;
+  header .wrapper {
+    display: flex;
+    place-items: flex-start;
     flex-wrap: wrap;
-    gap: 8px;
+  }
+
+  nav {
+    text-align: left;
+    margin-left: -1rem;
+    font-size: 1rem;
+
+    padding: 1rem 0;
+    margin-top: 1rem;
   }
 }
 </style>

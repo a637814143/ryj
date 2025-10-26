@@ -49,6 +49,29 @@ export type StudentProfile = {
   graduationYear: number | null
 }
 
+export type ProfileRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export type StudentProfileUpdateRequest = {
+  id: number
+  studentId: number
+  gender: string | null
+  age: number | null
+  major: string | null
+  biography: string | null
+  graduationYear: number | null
+  status: ProfileRequestStatus
+  createdAt: string | null
+  reviewedAt: string | null
+  reviewerId: number | null
+  reviewComment: string | null
+}
+
+export type StudentProfileDetail = {
+  profile: StudentProfile | null
+  pendingRequest: StudentProfileUpdateRequest | null
+  history: StudentProfileUpdateRequest[]
+}
+
 export type StudentEducation = {
   id: number
   studentId: number
@@ -161,10 +184,28 @@ export async function fetchStudentDashboard(studentId: number) {
   return request<StudentDashboardResponse>(`/api/student-dashboard/${studentId}`)
 }
 
-export async function saveStudentProfile(payload: Partial<StudentProfile> & { id: number }) {
-  return request<boolean>('/api/students/profiles', {
+export async function fetchStudentProfileDetail(studentId: number) {
+  return request<StudentProfileDetail>(`/api/students/profiles/${studentId}`)
+}
+
+export async function submitStudentProfileRequest(payload: Partial<StudentProfile> & { id: number }) {
+  return request<StudentProfileUpdateRequest>('/api/students/profiles/requests', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export async function updateStudentProfileRequest(requestId: number, payload: Partial<StudentProfile> & { id: number }) {
+  return request<boolean>(`/api/students/profiles/requests/${requestId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteStudentProfileRequest(requestId: number, studentId: number) {
+  const params = new URLSearchParams({ studentId: String(studentId) })
+  return request<boolean>(`/api/students/profiles/requests/${requestId}?${params.toString()}`, {
+    method: 'DELETE',
   })
 }
 

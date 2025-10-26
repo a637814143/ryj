@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   fetchStudentDashboard,
-  saveStudentProfile,
+  submitStudentProfileRequest,
   createEducation,
   updateEducation,
   deleteEducation,
@@ -791,7 +791,7 @@ const handleProfileSubmit = async () => {
   profileError.value = ''
   profileMessage.value = ''
   try {
-    await saveStudentProfile({
+    await submitStudentProfileRequest({
       id: studentId.value,
       gender: profileForm.gender || null,
       age: profileForm.age ?? null,
@@ -799,7 +799,7 @@ const handleProfileSubmit = async () => {
       biography: profileForm.biography || null,
       graduationYear: profileForm.graduationYear ?? null,
     })
-    profileMessage.value = '个人信息已保存'
+    profileMessage.value = '档案更新申请已提交，待管理员审核后生效'
     await fetchDashboard()
   } catch (error) {
     profileError.value = error instanceof Error ? error.message : '保存个人信息失败'

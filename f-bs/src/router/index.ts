@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import HomeView from '../views/HomeView.vue'
 import StudentDashboardView from '../views/StudentDashboardView.vue'
+import StudentProfileCenterView from '../views/StudentProfileCenterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,6 +16,11 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/student/profile',
+      name: 'student-profile',
+      component: StudentProfileCenterView,
     },
     {
       path: '/student/:section?',

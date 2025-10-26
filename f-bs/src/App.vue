@@ -88,6 +88,12 @@ const getStudentLink = (section: string) => {
   if (stored) {
     query.studentId = stored
   }
+  if (section === 'profile') {
+    return {
+      name: 'student-profile',
+      query,
+    }
+  }
   if (section) {
     query.section = section
   }

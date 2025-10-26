@@ -1,5 +1,16 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+interface UserPayload {
+  id: number
+  username: string
+  fullName: string | null
+  email: string | null
+  phone: string | null
+  role: string | null
+  status: string | null
+}
 
 const form = reactive({
   username: '',
@@ -9,6 +20,7 @@ const form = reactive({
 const loading = ref(false)
 const message = ref('')
 const messageType = ref<'success' | 'error' | ''>('')
+const router = useRouter()
 
 const submit = async () => {
   if (!form.username || !form.password) {
@@ -33,8 +45,15 @@ const submit = async () => {
     const data = await response.json()
 
     if (response.ok && data.code === 200) {
-      message.value = data.message || '登录成功'
+      message.value = '登录成功，正在进入首页...'
       messageType.value = 'success'
+      const payload = (data.data && data.data.user) as UserPayload | undefined
+      if (payload) {
+        localStorage.setItem('ryj-current-user', JSON.stringify(payload))
+      }
+      setTimeout(() => {
+        router.push({ name: 'home' })
+      }, 400)
     } else {
       message.value = data.message || '用户名或密码错误'
       messageType.value = 'error'

@@ -178,6 +178,26 @@ CREATE TABLE `system_notification`  ();
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for public_search_history
+-- ----------------------------
+DROP TABLE IF EXISTS `public_search_history`;
+CREATE TABLE `public_search_history`  ();
+
+-- ----------------------------
+-- Records of public_search_history
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for public_resource
+-- ----------------------------
+DROP TABLE IF EXISTS `public_resource`;
+CREATE TABLE `public_resource`  ();
+
+-- ----------------------------
+-- Records of public_resource
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for teacher
 -- ----------------------------
 DROP TABLE IF EXISTS `teacher`;

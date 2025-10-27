@@ -8,4 +8,6 @@ public interface ResumeSkillService {
     List<ResumeSkill> findByResumeId(Long resumeId);
 
     void replaceSkills(Long resumeId, List<ResumeSkill> skills);
+
+    int countByResumeId(Long resumeId);
 }

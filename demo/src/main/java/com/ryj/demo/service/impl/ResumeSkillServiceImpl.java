@@ -32,4 +32,9 @@ public class ResumeSkillServiceImpl implements ResumeSkillService {
             resumeSkillMapper.insertSkill(skill);
         }
     }
+
+    @Override
+    public int countByResumeId(Long resumeId) {
+        return resumeSkillMapper.countByResumeId(resumeId);
+    }
 }

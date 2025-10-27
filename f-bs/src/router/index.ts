@@ -10,6 +10,7 @@ import StudentResumeView from '../views/student/StudentResumeView.vue'
 import StudentApplicationsView from '../views/student/StudentApplicationsView.vue'
 import StudentInterviewsView from '../views/student/StudentInterviewsView.vue'
 import StudentIntentionView from '../views/student/StudentIntentionView.vue'
+import StudentJobBoardView from '../views/student/StudentJobBoardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,6 +54,11 @@ const router = createRouter({
       path: '/student/applications',
       name: 'student-applications',
       component: StudentApplicationsView,
+    },
+    {
+      path: '/student/jobs',
+      name: 'student-jobs',
+      component: StudentJobBoardView,
     },
     {
       path: '/student/interviews',

@@ -57,7 +57,7 @@ const getStatusLabel = (status: string) => {
         <div class="empty-icon">💼</div>
         <h3>还没有求职申请</h3>
         <p>浏览职位列表，开始申请您感兴趣的工作</p>
-        <RouterLink to="/jobs/list" class="btn-primary">浏览职位</RouterLink>
+        <RouterLink to="/student/jobs" class="btn-primary">浏览职位</RouterLink>
       </div>
 
       <div v-else class="applications-list">

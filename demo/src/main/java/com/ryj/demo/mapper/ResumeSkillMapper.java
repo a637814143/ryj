@@ -16,4 +16,7 @@ public interface ResumeSkillMapper {
 
     @Delete("DELETE FROM resume_skill WHERE resume_id = #{resumeId}")
     void deleteByResumeId(Long resumeId);
+
+    @Select("SELECT COUNT(1) FROM resume_skill WHERE resume_id = #{resumeId}")
+    int countByResumeId(Long resumeId);
 }

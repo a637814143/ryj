@@ -21,6 +21,7 @@ import {
   createJobApplication,
   type EmploymentIntentionWorkType,
   type ExperienceType,
+  type JobPostingWorkType,
   type JobApplicationOverview,
   type JobApplicationStatus,
   type InterviewOverview,
@@ -168,11 +169,12 @@ const interviewStatusLabels: Record<InterviewStatus, string> = {
   CANCELLED: '已取消',
 }
 
-const workTypeLabels: Record<EmploymentIntentionWorkType, string> = {
+const workTypeLabels: Record<JobPostingWorkType | EmploymentIntentionWorkType, string> = {
   FULL_TIME: '全职',
   PART_TIME: '兼职',
   INTERNSHIP: '实习',
   FLEXIBLE: '灵活',
+  REMOTE: '远程',
 }
 
 const experienceTypeLabels: Record<ExperienceType, string> = {
@@ -381,7 +383,9 @@ const formatDateRange = (start: string | null | undefined, end: string | null | 
 const formatExperienceType = (type: ExperienceType | null | undefined) =>
   type ? experienceTypeLabels[type] : '其他'
 
-const formatWorkType = (type: EmploymentIntentionWorkType | null | undefined) =>
+const formatWorkType = (
+  type: JobPostingWorkType | EmploymentIntentionWorkType | null | undefined
+) =>
   type ? workTypeLabels[type] : '未指定'
 
 const formatJobStatus = (status: JobApplicationStatus) => jobStatusLabels[status] || status

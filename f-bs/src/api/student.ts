@@ -176,7 +176,7 @@ export type InterviewOverview = {
   jobTitle: string | null
 }
 
-export type JobPostingWorkType = 'FULL_TIME' | 'PART_TIME' | 'INTERNSHIP' | 'FLEXIBLE'
+export type JobPostingWorkType = 'FULL_TIME' | 'PART_TIME' | 'INTERNSHIP' | 'FLEXIBLE' | 'REMOTE'
 
 export type RecommendedJob = {
   id: number
@@ -185,6 +185,37 @@ export type RecommendedJob = {
   salaryRange: string | null
   workType: JobPostingWorkType | null
   matchesIntention: boolean
+}
+
+export type JobPosting = {
+  id: number
+  employerId: number | null
+  title: string
+  description: string | null
+  salaryRange: string | null
+  location: string | null
+  workType: JobPostingWorkType | null
+  status: 'OPEN' | 'CLOSED' | 'DRAFT' | null
+  publishedDate: string | null
+  closingDate: string | null
+}
+
+export type JobRequirement = {
+  jobId: number
+  requirement: string
+}
+
+export type JobPostingDetail = {
+  posting: JobPosting
+  requirements: JobRequirement[]
+}
+
+export type JobPostingPage = {
+  records: JobPosting[]
+  total: number
+  size: number
+  current: number
+  pages?: number
 }
 
 export type StudentDashboardResponse = {
@@ -395,4 +426,25 @@ export async function createJobApplication(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+export async function fetchJobPostings(params: {
+  page?: number
+  size?: number
+  employerId?: number
+  workType?: JobPostingWorkType | ''
+  keyword?: string
+} = {}) {
+  const searchParams = new URLSearchParams()
+  if (params.page) searchParams.set('page', String(params.page))
+  if (params.size) searchParams.set('size', String(params.size))
+  if (params.employerId) searchParams.set('employerId', String(params.employerId))
+  if (params.workType) searchParams.set('workType', params.workType)
+  if (params.keyword && params.keyword.trim()) searchParams.set('keyword', params.keyword.trim())
+  const query = searchParams.toString()
+  return request<JobPostingPage>(`/api/job-postings${query ? `?${query}` : ''}`)
+}
+
+export async function fetchJobPostingDetail(id: number) {
+  return request<JobPostingDetail>(`/api/job-postings/${id}`)
 }

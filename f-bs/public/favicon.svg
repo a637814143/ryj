@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- 背景圆形 -->
+  <circle cx="32" cy="32" r="32" fill="#667eea"/>
+  
+  <!-- 毕业帽 -->
+  <g transform="translate(12, 18)">
+    <!-- 帽子顶部 -->
+    <polygon points="20,8 4,14 20,20 36,14" fill="#ffffff"/>
+    
+    <!-- 帽子底部 -->
+    <path d="M 8,16 L 8,24 Q 8,28 20,28 Q 32,28 32,24 L 32,16" fill="#e0e7ff"/>
+    
+    <!-- 流苏 -->
+    <circle cx="36" cy="14" r="1.5" fill="#fbbf24"/>
+    <line x1="36" y1="15.5" x2="36" y2="20" stroke="#fbbf24" stroke-width="1"/>
+    <circle cx="36" cy="20" r="2" fill="#fbbf24"/>
+  </g>
+  
+  <!-- 底部装饰线 -->
+  <rect x="16" y="48" width="32" height="3" rx="1.5" fill="#ffffff" opacity="0.8"/>
+</svg>
+

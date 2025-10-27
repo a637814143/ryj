@@ -2,7 +2,9 @@ package com.ryj.demo.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryj.demo.common.ApiResponse;
+import com.ryj.demo.dto.ResumeDetailResponse;
 import com.ryj.demo.dto.ResumeRequest;
+import com.ryj.demo.dto.ResumeSummaryResponse;
 import com.ryj.demo.entity.Resume;
 import com.ryj.demo.entity.ResumeExperience;
 import com.ryj.demo.entity.ResumeSkill;
@@ -14,9 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/resumes")
@@ -29,7 +30,7 @@ public class ResumeController {
 
     @PostMapping
     @Transactional
-    public ApiResponse<Map<String, Object>> create(@Valid @RequestBody ResumeRequest request) {
+    public ApiResponse<ResumeDetailResponse> create(@Valid @RequestBody ResumeRequest request) {
         Resume resume = new Resume();
         resume.setStudentId(request.getStudentId());
         resume.setTitle(request.getTitle());
@@ -43,7 +44,7 @@ public class ResumeController {
 
     @PutMapping("/{id}")
     @Transactional
-    public ApiResponse<Map<String, Object>> update(@PathVariable Long id, @Valid @RequestBody ResumeRequest request) {
+    public ApiResponse<ResumeDetailResponse> update(@PathVariable Long id, @Valid @RequestBody ResumeRequest request) {
         Resume resume = resumeService.getById(id);
         if (resume == null) {
             throw new IllegalArgumentException("简历不存在");
@@ -57,14 +58,29 @@ public class ResumeController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Map<String, Object>> detail(@PathVariable Long id) {
+    public ApiResponse<ResumeDetailResponse> detail(@PathVariable Long id) {
         return getResumeDetailResponse(id);
     }
 
     @GetMapping("/student/{studentId}")
-    public ApiResponse<List<Resume>> listByStudent(@PathVariable Long studentId) {
-        List<Resume> resumes = resumeService.list(new LambdaQueryWrapper<Resume>().eq(Resume::getStudentId, studentId));
-        return ApiResponse.success(resumes);
+    public ApiResponse<List<ResumeSummaryResponse>> listByStudent(@PathVariable Long studentId) {
+        List<Resume> resumes = resumeService.list(new LambdaQueryWrapper<Resume>()
+                .eq(Resume::getStudentId, studentId)
+                .orderByDesc(Resume::getUpdatedAt));
+        List<ResumeSummaryResponse> results = resumes.stream().map(resume -> {
+            ResumeSummaryResponse summary = new ResumeSummaryResponse();
+            summary.setId(resume.getId());
+            summary.setTitle(resume.getTitle());
+            summary.setSummary(resume.getSummary());
+            summary.setPortfolioUrl(resume.getPortfolioUrl());
+            summary.setCreatedAt(resume.getCreatedAt());
+            summary.setUpdatedAt(resume.getUpdatedAt());
+            summary.setExperienceCount((int) resumeExperienceService.count(new LambdaQueryWrapper<ResumeExperience>()
+                    .eq(ResumeExperience::getResumeId, resume.getId())));
+            summary.setSkillCount(resumeSkillService.countByResumeId(resume.getId()));
+            return summary;
+        }).collect(Collectors.toList());
+        return ApiResponse.success(results);
     }
 
     @DeleteMapping("/{id}")
@@ -102,15 +118,14 @@ public class ResumeController {
         }
     }
 
-    private ApiResponse<Map<String, Object>> getResumeDetailResponse(Long resumeId) {
+    private ApiResponse<ResumeDetailResponse> getResumeDetailResponse(Long resumeId) {
         Resume resume = resumeService.getById(resumeId);
         if (resume == null) {
             throw new IllegalArgumentException("简历不存在");
         }
-        Map<String, Object> result = new HashMap<>();
-        result.put("resume", resume);
-        result.put("experiences", resumeExperienceService.list(new LambdaQueryWrapper<ResumeExperience>().eq(ResumeExperience::getResumeId, resumeId)));
-        result.put("skills", resumeSkillService.findByResumeId(resumeId));
-        return ApiResponse.success(result);
+        List<ResumeExperience> experiences = resumeExperienceService.list(new LambdaQueryWrapper<ResumeExperience>()
+                .eq(ResumeExperience::getResumeId, resumeId));
+        List<ResumeSkill> skills = resumeSkillService.findByResumeId(resumeId);
+        return ApiResponse.success(new ResumeDetailResponse(resume, experiences, skills));
     }
 }

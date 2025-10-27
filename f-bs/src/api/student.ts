@@ -131,6 +131,27 @@ export type ResumeOverview = {
   updatedAt: string | null
 }
 
+export type ResumeRecord = {
+  id: number
+  studentId: number
+  title: string
+  summary: string | null
+  portfolioUrl: string | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export type ResumeSummary = {
+  id: number
+  title: string
+  summary: string | null
+  portfolioUrl: string | null
+  createdAt: string | null
+  updatedAt: string | null
+  experienceCount: number
+  skillCount: number
+}
+
 export type JobApplicationStatus = 'SUBMITTED' | 'REVIEWING' | 'INTERVIEW' | 'OFFERED' | 'REJECTED'
 
 export type JobApplicationOverview = {
@@ -300,6 +321,32 @@ export type ResumeSkillInput = {
   proficiency: number | null
 }
 
+export type ResumeExperienceDetail = {
+  id: number
+  resumeId: number
+  title: string
+  organization: string | null
+  startDate: string | null
+  endDate: string | null
+  description: string | null
+}
+
+export type ResumeSkillDetail = {
+  resumeId: number
+  skill: string
+  proficiency: number | null
+}
+
+export type ResumeDetail = {
+  resume: ResumeRecord
+  experiences: ResumeExperienceDetail[]
+  skills: ResumeSkillDetail[]
+}
+
+export async function fetchStudentResumes(studentId: number) {
+  return request<ResumeSummary[]>(`/api/resumes/student/${studentId}`)
+}
+
 export async function createResume(payload: {
   studentId: number
   title: string
@@ -308,7 +355,7 @@ export async function createResume(payload: {
   experiences: ResumeExperienceInput[]
   skills: ResumeSkillInput[]
 }) {
-  return request('/api/resumes', {
+  return request<ResumeDetail>('/api/resumes', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -322,7 +369,7 @@ export async function updateResume(id: number, payload: {
   experiences: ResumeExperienceInput[]
   skills: ResumeSkillInput[]
 }) {
-  return request(`/api/resumes/${id}`, {
+  return request<ResumeDetail>(`/api/resumes/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   })
@@ -335,9 +382,7 @@ export async function deleteResume(id: number) {
 }
 
 export async function fetchResumeDetail(id: number) {
-  return request<{ resume: ResumeOverview; experiences: ResumeExperienceInput[]; skills: ResumeSkillInput[] }>(
-    `/api/resumes/${id}`
-  )
+  return request<ResumeDetail>(`/api/resumes/${id}`)
 }
 
 export async function createJobApplication(payload: {

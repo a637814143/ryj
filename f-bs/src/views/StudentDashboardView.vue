@@ -697,7 +697,7 @@ const editResume = async (id: number) => {
     resumeForm.portfolioUrl = detail.resume.portfolioUrl ?? ''
     resumeForm.experiences = (detail.experiences ?? []).map((item) => ({
       title: item.title ?? '',
-      organization: (item as any).organization ?? '',
+      organization: item.organization ?? '',
       startDate: item.startDate ?? null,
       endDate: item.endDate ?? null,
       description: item.description ?? '',

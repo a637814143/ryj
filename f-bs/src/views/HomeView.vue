@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 interface Statistics {
   totalJobs: number
@@ -36,6 +37,33 @@ interface JobSummary {
   salaryRange: string
   workType: string | null
   publishedDate: string
+}
+
+interface JobDetail {
+  posting: {
+    id: number
+    employerId: number
+    title: string
+    description: string | null
+    salaryRange: string | null
+    location: string | null
+    workType: string | null
+    status: string | null
+    publishedDate: string | null
+    closingDate: string | null
+  }
+  requirements: Array<{ requirement: string }>
+}
+
+interface EmployerInfo {
+  id: number
+  userId: number
+  companyName: string
+  contactPerson: string | null
+  contactEmail: string | null
+  contactPhone: string | null
+  description: string | null
+  website: string | null
 }
 
 interface ResourceSummary {
@@ -98,6 +126,7 @@ interface UserPayload {
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
+const router = useRouter()
 
 const overview = ref<OverviewResponse | null>(null)
 const overviewLoading = ref(false)
@@ -140,6 +169,16 @@ const selectedFile = ref<File | null>(null)
 const uploadDescription = ref('')
 
 const user = ref<UserPayload | null>(null)
+
+// 职位详情弹窗相关
+const showJobDetail = ref(false)
+const jobDetailLoading = ref(false)
+const jobDetail = ref<JobDetail | null>(null)
+const employerInfo = ref<EmployerInfo | null>(null)
+
+// 登录提示对话框
+const showLoginPrompt = ref(false)
+const loginPromptMessage = ref('')
 
 const toggleCategory = (key: string) => {
   const index = searchForm.categories.indexOf(key)
@@ -413,6 +452,92 @@ const formatNotificationCategory = (category: string | null) => {
   return categoryMap[category] || category
 }
 
+const openJobDetail = async (jobId: number) => {
+  showJobDetail.value = true
+  jobDetailLoading.value = true
+  jobDetail.value = null
+  employerInfo.value = null
+  
+  try {
+    // 获取职位详情
+    const jobResponse = await fetch(`${API_BASE}/api/job-postings/${jobId}`)
+    const jobData = await jobResponse.json()
+    
+    if (jobResponse.ok && jobData.code === 200) {
+      jobDetail.value = jobData.data as JobDetail
+      
+      // 获取企业信息
+      const employerId = jobData.data.posting.employerId
+      if (employerId) {
+        const employerResponse = await fetch(`${API_BASE}/api/employers/${employerId}`)
+        const employerData = await employerResponse.json()
+        
+        if (employerResponse.ok && employerData.code === 200) {
+          employerInfo.value = employerData.data as EmployerInfo
+        }
+      }
+    }
+  } catch (error) {
+    console.error('获取职位详情失败', error)
+  } finally {
+    jobDetailLoading.value = false
+  }
+}
+
+const closeJobDetail = () => {
+  showJobDetail.value = false
+  jobDetail.value = null
+  employerInfo.value = null
+}
+
+const handleApplyJob = () => {
+  if (!user.value) {
+    loginPromptMessage.value = '请先登录后才能申请职位'
+    showLoginPrompt.value = true
+    return
+  }
+  
+  // 检查用户角色，只有学生可以申请职位
+  if (user.value.role !== 'STUDENT') {
+    alert('只有学生用户可以申请职位')
+    return
+  }
+  
+  // 已登录的学生用户，跳转到学生职位申请页面
+  if (jobDetail.value?.posting.id) {
+    closeJobDetail()
+    // 跳转到学生职位申请页面，并传递职位ID
+    router.push({
+      path: '/student/jobs',
+      query: { jobId: jobDetail.value.posting.id }
+    })
+  }
+}
+
+const handleCollectJob = () => {
+  if (!user.value) {
+    loginPromptMessage.value = '请先登录后才能收藏职位'
+    showLoginPrompt.value = true
+    return
+  }
+  
+  // TODO: 实现职位收藏逻辑
+  alert('收藏成功！')
+  closeJobDetail()
+}
+
+const closeLoginPrompt = () => {
+  showLoginPrompt.value = false
+  loginPromptMessage.value = ''
+}
+
+const goToLogin = () => {
+  closeLoginPrompt()
+  closeJobDetail()
+  // 跳转到登录页面
+  router.push('/login')
+}
+
 const initUser = () => {
   const raw = localStorage.getItem('ryj-current-user')
   if (!raw) return
@@ -632,7 +757,7 @@ onMounted(async () => {
           <p>根据实时投递热度与发布时间推荐</p>
         </header>
         <ul v-if="trendingJobs.length">
-          <li v-for="job in trendingJobs" :key="job.id">
+          <li v-for="job in trendingJobs" :key="job.id" @click="openJobDetail(job.id)" class="job-item-clickable">
             <div>
               <h4>{{ job.title }}</h4>
               <p>{{ job.location }} · {{ formatWorkType(job.workType) }}</p>
@@ -723,6 +848,120 @@ onMounted(async () => {
         <small v-if="user">点击上方上传按钮分享资料</small>
       </div>
     </section>
+
+    <!-- 职位详情弹窗 -->
+    <div v-if="showJobDetail" class="job-detail-modal" @click.self="closeJobDetail">
+      <div class="job-detail-content">
+        <button class="close-btn" @click="closeJobDetail">✕</button>
+        
+        <div v-if="jobDetailLoading" class="loading-container">
+          <div class="loading-spinner">加载中...</div>
+        </div>
+        
+        <div v-else-if="jobDetail" class="job-detail-body">
+          <!-- 职位基本信息 -->
+          <div class="job-detail-header">
+            <h2>{{ jobDetail.posting.title }}</h2>
+            <div class="job-meta">
+              <span class="meta-item">
+                <span class="icon">📍</span>
+                {{ jobDetail.posting.location || '未指定' }}
+              </span>
+              <span class="meta-item">
+                <span class="icon">💼</span>
+                {{ formatWorkType(jobDetail.posting.workType) }}
+              </span>
+              <span class="meta-item">
+                <span class="icon">💰</span>
+                {{ jobDetail.posting.salaryRange || '薪资面议' }}
+              </span>
+              <span v-if="jobDetail.posting.closingDate" class="meta-item">
+                <span class="icon">📅</span>
+                截止：{{ jobDetail.posting.closingDate }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 企业信息 -->
+          <div v-if="employerInfo" class="employer-section">
+            <h3>🏢 企业信息</h3>
+            <div class="employer-card">
+              <div class="employer-name">{{ employerInfo.companyName }}</div>
+              <p v-if="employerInfo.description" class="employer-desc">{{ employerInfo.description }}</p>
+              <div class="employer-contacts">
+                <span v-if="employerInfo.contactPerson" class="contact-item">
+                  <span class="icon">👤</span>
+                  联系人：{{ employerInfo.contactPerson }}
+                </span>
+                <span v-if="employerInfo.contactEmail" class="contact-item">
+                  <span class="icon">📧</span>
+                  {{ employerInfo.contactEmail }}
+                </span>
+                <span v-if="employerInfo.contactPhone" class="contact-item">
+                  <span class="icon">📱</span>
+                  {{ employerInfo.contactPhone }}
+                </span>
+                <a v-if="employerInfo.website" :href="employerInfo.website" target="_blank" class="contact-item website-link">
+                  <span class="icon">🌐</span>
+                  {{ employerInfo.website }}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 职位描述 -->
+          <div v-if="jobDetail.posting.description" class="job-section">
+            <h3>📝 职位描述</h3>
+            <p class="job-description">{{ jobDetail.posting.description }}</p>
+          </div>
+
+          <!-- 任职要求 -->
+          <div v-if="jobDetail.requirements && jobDetail.requirements.length" class="job-section">
+            <h3>✅ 任职要求</h3>
+            <ul class="requirements-list">
+              <li v-for="(req, index) in jobDetail.requirements" :key="index">
+                {{ req.requirement }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- 申请按钮 -->
+          <div class="job-actions">
+            <button class="apply-btn" @click="handleApplyJob">
+              <span class="icon">💼</span>
+              立即申请
+            </button>
+            <button class="collect-btn" @click="handleCollectJob">
+              <span class="icon">⭐</span>
+              收藏职位
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="error-container">
+          <p>暂无职位详情</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 登录提示对话框 -->
+    <div v-if="showLoginPrompt" class="login-prompt-modal" @click.self="closeLoginPrompt">
+      <div class="login-prompt-content">
+        <div class="prompt-icon">🔐</div>
+        <h3 class="prompt-title">需要登录</h3>
+        <p class="prompt-message">{{ loginPromptMessage }}</p>
+        <div class="prompt-actions">
+          <button class="btn-cancel" @click="closeLoginPrompt">
+            <span class="icon">✕</span>
+            取消
+          </button>
+          <button class="btn-login" @click="goToLogin">
+            <span class="icon">👤</span>
+            去登录
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2113,6 +2352,511 @@ onMounted(async () => {
 
   .header-icon {
     font-size: 2.5rem;
+  }
+}
+
+/* 职位项可点击样式 */
+.job-item-clickable {
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.job-item-clickable:hover {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 职位详情弹窗 */
+.job-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.job-detail-content {
+  background: #ffffff;
+  border-radius: 24px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 滚动条样式 */
+.job-detail-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.job-detail-content::-webkit-scrollbar-track {
+  background: #f5f5f7;
+  border-radius: 10px;
+}
+
+.job-detail-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  border-radius: 10px;
+}
+
+.close-btn {
+  position: sticky;
+  top: 1.5rem;
+  right: 1.5rem;
+  float: right;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f5f5f7;
+  border: none;
+  font-size: 1.5rem;
+  color: #1d1d1f;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.close-btn:hover {
+  background: #e8e8ed;
+  transform: rotate(90deg);
+}
+
+.loading-container,
+.error-container {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #6e6e73;
+}
+
+.loading-spinner {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.job-detail-body {
+  padding: 2rem 2.5rem 2.5rem;
+}
+
+.job-detail-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f5f5f7;
+}
+
+.job-detail-header h2 {
+  margin: 0 0 1.25rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.2;
+}
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.job-meta .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #6e6e73;
+  font-weight: 500;
+}
+
+.job-meta .meta-item .icon {
+  font-size: 1.125rem;
+}
+
+.employer-section,
+.job-section {
+  margin-bottom: 2rem;
+}
+
+.employer-section h3,
+.job-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+
+.employer-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  padding: 1.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.employer-name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 0.75rem;
+}
+
+.employer-desc {
+  color: #6e6e73;
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+  font-size: 0.9375rem;
+}
+
+.employer-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6e6e73;
+}
+
+.contact-item .icon {
+  font-size: 1rem;
+}
+
+.website-link {
+  color: #0071e3;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.website-link:hover {
+  color: #0077ed;
+  text-decoration: underline;
+}
+
+.job-description {
+  color: #1d1d1f;
+  line-height: 1.7;
+  font-size: 1rem;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.requirements-list li {
+  position: relative;
+  padding-left: 1.75rem;
+  color: #1d1d1f;
+  line-height: 1.6;
+  font-size: 0.9375rem;
+}
+
+.requirements-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.job-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f5f5f7;
+}
+
+.apply-btn,
+.collect-btn {
+  flex: 1;
+  padding: 1rem 2rem;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apply-btn {
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.3);
+}
+
+.apply-btn:hover {
+  background: linear-gradient(135deg, #0077ed 0%, #007aff 100%);
+  box-shadow: 0 6px 24px rgba(0, 113, 227, 0.4);
+  transform: translateY(-2px);
+}
+
+.collect-btn {
+  background: #f5f5f7;
+  color: #1d1d1f;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.collect-btn:hover {
+  background: #e8e8ed;
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.apply-btn .icon,
+.collect-btn .icon {
+  font-size: 1.125rem;
+}
+
+@media (max-width: 768px) {
+  .job-detail-modal {
+    padding: 1rem;
+  }
+
+  .job-detail-content {
+    border-radius: 20px;
+    max-height: 95vh;
+  }
+
+  .job-detail-body {
+    padding: 1.5rem 1.25rem 2rem;
+  }
+
+  .job-detail-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .job-meta {
+    gap: 1rem;
+  }
+
+  .job-meta .meta-item {
+    font-size: 0.875rem;
+  }
+
+  .employer-card {
+    padding: 1.25rem;
+  }
+
+  .employer-name {
+    font-size: 1.125rem;
+  }
+
+  .job-actions {
+    flex-direction: column;
+  }
+
+  .apply-btn,
+  .collect-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .close-btn {
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
+  }
+
+  .job-detail-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .job-meta .meta-item {
+    font-size: 0.8125rem;
+  }
+}
+
+/* 登录提示对话框 */
+.login-prompt-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+.login-prompt-content {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.prompt-icon {
+  font-size: 4rem;
+  margin-bottom: 1.25rem;
+  line-height: 1;
+}
+
+.prompt-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+
+.prompt-message {
+  margin: 0 0 2rem 0;
+  font-size: 1rem;
+  color: #6e6e73;
+  line-height: 1.5;
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-cancel,
+.btn-login {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-cancel {
+  background: #f5f5f7;
+  color: #1d1d1f;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.btn-cancel:hover {
+  background: #e8e8ed;
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-login {
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+}
+
+.btn-login:hover {
+  background: linear-gradient(135deg, #0077ed 0%, #007aff 100%);
+  box-shadow: 0 6px 16px rgba(0, 113, 227, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-cancel .icon,
+.btn-login .icon {
+  font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+  .login-prompt-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .prompt-icon {
+    font-size: 3rem;
+  }
+
+  .prompt-title {
+    font-size: 1.25rem;
+  }
+
+  .prompt-message {
+    font-size: 0.9375rem;
+  }
+
+  .prompt-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-login {
+    width: 100%;
   }
 }
 </style>

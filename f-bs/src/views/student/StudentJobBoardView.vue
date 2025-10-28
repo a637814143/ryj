@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   createJobApplication,
   fetchJobPostingDetail,
@@ -10,6 +11,8 @@ import {
   type JobPostingWorkType,
   type ResumeSummary,
 } from '../../api/student'
+
+const route = useRoute()
 
 const pageSize = 6
 
@@ -288,8 +291,17 @@ watch(
   }
 )
 
-onMounted(() => {
-  loadJobs()
+onMounted(async () => {
+  await loadJobs()
+  
+  // 检查URL参数，如果有jobId，自动选中该职位
+  const jobIdParam = route.query.jobId
+  if (jobIdParam) {
+    const jobId = Number(jobIdParam)
+    if (!isNaN(jobId)) {
+      selectedJobId.value = jobId
+    }
+  }
 })
 </script>
 

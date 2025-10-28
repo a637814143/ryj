@@ -61,7 +61,13 @@ const submit = async () => {
         }
         
         // 根据用户角色和重定向路径确定跳转目标
-        const targetPath = redirectPath || (payload.role === 'STUDENT' ? '/student/overview' : '/home')
+        const targetPath =
+          redirectPath ||
+          (payload.role === 'STUDENT'
+            ? '/student/overview'
+            : payload.role === 'EMPLOYER'
+              ? '/employer/overview'
+              : '/home')
         message.value = '登录成功，正在跳转...'
         messageType.value = 'success'
         

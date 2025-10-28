@@ -6,9 +6,12 @@ const router = useRouter()
 const showUserMenu = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
 const isLoggedIn = ref(false)
-const currentUser = ref<{ username?: string; fullName?: string } | null>(null)
+const currentUser = ref<{ username?: string; fullName?: string; role?: string } | null>(null)
 const showLoginDialog = ref(false)
 const targetRoute = ref('')
+const currentRole = computed(() => currentUser.value?.role ?? null)
+const isStudentRole = computed(() => currentRole.value === 'STUDENT')
+const isEmployerRole = computed(() => currentRole.value === 'EMPLOYER')
 
 // 检查登录状态
 const checkLoginStatus = () => {
@@ -160,7 +163,7 @@ onUnmounted(() => {
       <nav class="nav">
         <RouterLink to="/home" class="nav-link">首页</RouterLink>
         
-        <div class="nav-dropdown">
+        <div class="nav-dropdown" v-if="isStudentRole">
           <span class="nav-link">学生专区 ▾</span>
           <div class="dropdown-menu">
             <RouterLink to="/student/overview" @click="(e) => handleNavClick(e, '/student/overview')">学生总览</RouterLink>
@@ -181,13 +184,15 @@ onUnmounted(() => {
           </div>
         </div>
         
-        <div class="nav-dropdown">
+        <div class="nav-dropdown" v-if="isEmployerRole">
           <span class="nav-link">企业专区 ▾</span>
           <div class="dropdown-menu">
-            <RouterLink to="/employer/info" @click="(e) => handleNavClick(e, '/employer/info')">企业信息</RouterLink>
-            <RouterLink to="/employer/post-job" @click="(e) => handleNavClick(e, '/employer/post-job')">发布职位</RouterLink>
+            <RouterLink to="/employer/overview" @click="(e) => handleNavClick(e, '/employer/overview')">企业总览</RouterLink>
+            <RouterLink to="/employer/profile" @click="(e) => handleNavClick(e, '/employer/profile')">企业信息</RouterLink>
+            <RouterLink to="/employer/jobs" @click="(e) => handleNavClick(e, '/employer/jobs')">岗位管理</RouterLink>
             <RouterLink to="/employer/applications" @click="(e) => handleNavClick(e, '/employer/applications')">应聘管理</RouterLink>
             <RouterLink to="/employer/interviews" @click="(e) => handleNavClick(e, '/employer/interviews')">面试安排</RouterLink>
+            <RouterLink to="/employer/talent" @click="(e) => handleNavClick(e, '/employer/talent')">人才库</RouterLink>
           </div>
         </div>
         

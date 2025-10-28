@@ -1,37 +1,48 @@
 -- 为求职申请页面插入测试数据
 USE bb;
 
+-- 0. 插入企业用户账号
+INSERT INTO sys_user (id, username, password_hash, full_name, email, phone, role, status) VALUES
+(1001, 'employer_bytedance', '$2a$10$abcdefghijklmnopqrstuv', '张经理', 'hr@bytedance.com', '010-12345678', 'EMPLOYER', 'ACTIVE'),
+(1002, 'employer_tencent', '$2a$10$abcdefghijklmnopqrstuv', '李主管', 'recruitment@tencent.com', '0755-86013388', 'EMPLOYER', 'ACTIVE'),
+(1003, 'employer_alibaba', '$2a$10$abcdefghijklmnopqrstuv', '王总监', 'jobs@alibaba.com', '0571-85022088', 'EMPLOYER', 'ACTIVE'),
+(1004, 'employer_meituan', '$2a$10$abcdefghijklmnopqrstuv', '赵女士', 'campus@meituan.com', '010-53658000', 'EMPLOYER', 'ACTIVE'),
+(1005, 'employer_netease', '$2a$10$abcdefghijklmnopqrstuv', '陈经理', 'hr@163.com', '020-85105163', 'EMPLOYER', 'ACTIVE'),
+(1006, 'employer_jd', '$2a$10$abcdefghijklmnopqrstuv', '刘主管', 'zhaopin@jd.com', '010-89127000', 'EMPLOYER', 'ACTIVE'),
+(1007, 'employer_baidu', '$2a$10$abcdefghijklmnopqrstuv', '孙经理', 'baidu_hr@baidu.com', '010-59928888', 'EMPLOYER', 'ACTIVE'),
+(1008, 'employer_xiaomi', '$2a$10$abcdefghijklmnopqrstuv', '周女士', 'talent@xiaomi.com', '010-60606666', 'EMPLOYER', 'ACTIVE');
+
 -- 1. 插入企业信息
-INSERT INTO employer (id, company_name, contact_person, contact_email, contact_phone, description, website) VALUES
-(1, '字节跳动科技有限公司', '张经理', 'hr@bytedance.com', '010-12345678', 
-'字节跳动是一家全球领先的移动互联网公司，旗下拥有抖音、今日头条等多款知名产品。我们致力于通过技术创新为用户创造价值。', 
+INSERT INTO employer (id, user_id, company_name, contact_person, contact_email, contact_phone, description, website) VALUES
+(1, 1001, '字节跳动科技有限公司', '张经理', 'hr@bytedance.com', '010-12345678',
+'字节跳动是一家全球领先的移动互联网公司，旗下拥有抖音、今日头条等多款知名产品。我们致力于通过技术创新为用户创造价值。',
 'https://www.bytedance.com'),
 
-(2, '腾讯科技（深圳）有限公司', '李主管', 'recruitment@tencent.com', '0755-86013388',
-'腾讯以技术丰富互联网用户的生活。通过通信及社交软件微信和QQ促进用户联系，并助力品牌与消费者建立联系。', 
+(2, 1002, '腾讯科技（深圳）有限公司', '李主管', 'recruitment@tencent.com', '0755-86013388',
+'腾讯以技术丰富互联网用户的生活。通过通信及社交软件微信和QQ促进用户联系，并助力品牌与消费者建立联系。',
 'https://www.tencent.com'),
 
-(3, '阿里巴巴网络技术有限公司', '王总监', 'jobs@alibaba.com', '0571-85022088',
+(3, 1003, '阿里巴巴网络技术有限公司', '王总监', 'jobs@alibaba.com', '0571-85022088',
 '阿里巴巴集团的使命是让天下没有难做的生意。我们旨在赋能企业，帮助他们实现数字化转型，并在数字经济时代蓬勃发展。',
 'https://www.alibaba.com'),
 
-(4, '美团科技有限公司', '赵女士', 'campus@meituan.com', '010-53658000',
+(4, 1004, '美团科技有限公司', '赵女士', 'campus@meituan.com', '010-53658000',
 '美团致力于帮大家吃得更好，生活更好。我们为消费者提供零售、餐饮、酒旅、出行等多种生活服务。',
 'https://www.meituan.com'),
 
-(5, '网易互联网科技有限公司', '陈经理', 'hr@163.com', '020-85105163',
+(5, 1005, '网易互联网科技有限公司', '陈经理', 'hr@163.com', '020-85105163',
 '网易是中国领先的互联网技术公司，在开发互联网应用、服务及其它技术方面处于业界领先地位。',
 'https://www.163.com'),
 
-(6, '京东集团', '刘主管', 'zhaopin@jd.com', '010-89127000',
+(6, 1006, '京东集团', '刘主管', 'zhaopin@jd.com', '010-89127000',
 '京东是中国领先的技术驱动型电商和零售基础设施服务商，致力于为消费者提供优质的购物体验。',
 'https://www.jd.com'),
 
-(7, '百度在线网络技术有限公司', '孙经理', 'baidu_hr@baidu.com', '010-59928888',
+(7, 1007, '百度在线网络技术有限公司', '孙经理', 'baidu_hr@baidu.com', '010-59928888',
 '百度是全球领先的人工智能公司，拥有强大的互联网基础，致力于用科技让复杂的世界更简单。',
 'https://www.baidu.com'),
 
-(8, '小米科技有限责任公司', '周女士', 'talent@xiaomi.com', '010-60606666',
+(8, 1008, '小米科技有限责任公司', '周女士', 'talent@xiaomi.com', '010-60606666',
 '小米公司正式成立于2010年4月，是一家专注于高端智能手机、互联网电视以及智能家居生态链建设的创新型科技企业。',
 'https://www.mi.com');
 

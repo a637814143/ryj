@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import HomeView from '../views/HomeView.vue'
+import ResumeDetailView from '../views/ResumeDetailView.vue'
 
 // 学生专区页面
 import StudentOverviewView from '../views/student/StudentOverviewView.vue'
@@ -11,6 +12,14 @@ import StudentApplicationsView from '../views/student/StudentApplicationsView.vu
 import StudentInterviewsView from '../views/student/StudentInterviewsView.vue'
 import StudentIntentionView from '../views/student/StudentIntentionView.vue'
 import StudentJobBoardView from '../views/student/StudentJobBoardView.vue'
+
+// 企业专区页面
+import EmployerOverviewView from '../views/employer/EmployerOverviewView.vue'
+import EmployerProfileView from '../views/employer/EmployerProfileView.vue'
+import EmployerJobsView from '../views/employer/EmployerJobsView.vue'
+import EmployerApplicationsView from '../views/employer/EmployerApplicationsView.vue'
+import EmployerInterviewsView from '../views/employer/EmployerInterviewsView.vue'
+import EmployerTalentView from '../views/employer/EmployerTalentView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,6 +46,12 @@ const router = createRouter({
       component: RegisterView,
       meta: { requiresAuth: false },
     },
+    {
+      path: '/resume/detail',
+      name: 'resume-detail',
+      component: ResumeDetailView,
+      meta: { requiresAuth: true, allowedRoles: ['STUDENT', 'EMPLOYER', 'TEACHER'] },
+    },
     // 学生专区路由 - 需要登录且用户角色为学生
     {
       path: '/student/overview',
@@ -48,13 +63,13 @@ const router = createRouter({
       path: '/student/profile',
       name: 'student-profile',
       component: StudentProfileView,
-      meta: { requiresAuth: true, role: 'STUDENT' },
+      meta: { requiresAuth: true, allowedRoles: ['STUDENT', 'EMPLOYER'] },
     },
     {
       path: '/student/resume',
       name: 'student-resume',
       component: StudentResumeView,
-      meta: { requiresAuth: true, role: 'STUDENT' },
+      meta: { requiresAuth: true, allowedRoles: ['STUDENT', 'EMPLOYER'] },
     },
     {
       path: '/student/applications',
@@ -79,6 +94,43 @@ const router = createRouter({
       name: 'student-intention',
       component: StudentIntentionView,
       meta: { requiresAuth: true, role: 'STUDENT' },
+    },
+    // 企业专区路由 - 需要登录且用户角色为企业
+    {
+      path: '/employer/overview',
+      name: 'employer-overview',
+      component: EmployerOverviewView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/profile',
+      name: 'employer-profile',
+      component: EmployerProfileView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/jobs',
+      name: 'employer-jobs',
+      component: EmployerJobsView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/applications',
+      name: 'employer-applications',
+      component: EmployerApplicationsView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/interviews',
+      name: 'employer-interviews',
+      component: EmployerInterviewsView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/talent',
+      name: 'employer-talent',
+      component: EmployerTalentView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
     },
   ],
 })
@@ -114,10 +166,20 @@ router.beforeEach((to, from, next) => {
     try {
       const userInfo = JSON.parse(userInfoStr)
       const requiredRole = to.meta.role as string | undefined
+      const allowedRoles = to.meta.allowedRoles as string[] | undefined
       
+      // 检查单个角色权限
       if (requiredRole && userInfo.role !== requiredRole) {
         // 角色不匹配，提示并返回首页
         alert(`该功能需要 ${requiredRole} 角色权限`)
+        next({ name: 'home' })
+        return
+      }
+      
+      // 检查多个角色权限
+      if (allowedRoles && !allowedRoles.includes(userInfo.role)) {
+        // 角色不在允许列表中，提示并返回首页
+        alert(`该功能需要 ${allowedRoles.join('、')} 角色权限`)
         next({ name: 'home' })
         return
       }

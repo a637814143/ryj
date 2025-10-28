@@ -4,8 +4,10 @@ import com.ryj.demo.auth.dto.LoginRequest;
 import com.ryj.demo.auth.dto.RegisterRequest;
 import com.ryj.demo.auth.dto.UserResponse;
 import com.ryj.demo.common.ApiResponse;
+import com.ryj.demo.entity.Employer;
 import com.ryj.demo.entity.StudentProfile;
 import com.ryj.demo.entity.SysUser;
+import com.ryj.demo.service.EmployerService;
 import com.ryj.demo.service.StudentProfileService;
 import com.ryj.demo.service.SysUserService;
 import jakarta.validation.Valid;
@@ -18,19 +20,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final SysUserService sysUserService;
     private final StudentProfileService studentProfileService;
     private final PasswordEncoder passwordEncoder;
-
-    public AuthController(SysUserService sysUserService, StudentProfileService studentProfileService, PasswordEncoder passwordEncoder) {
-        this.sysUserService = sysUserService;
-        this.studentProfileService = studentProfileService;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final EmployerService employerService;
 
     @PostMapping("/register")
     public ApiResponse<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -68,6 +68,22 @@ public class AuthController {
                     StudentProfile studentProfile = new StudentProfile();
                     studentProfile.setId(user.getId()); // 使用 sys_user 的 ID 作为 student_profile 的 ID
                     studentProfileService.save(studentProfile);
+                } else if (role == SysUser.Role.EMPLOYER) {
+                    employerService.findByUserId(user.getId()).ifPresentOrElse(existingEmployer -> {
+                        // 已存在企业资料则不重复创建
+                    }, () -> {
+                        Employer employer = new Employer();
+                        employer.setUserId(user.getId());
+                        String defaultCompanyName = Optional.ofNullable(user.getFullName())
+                                .filter(name -> !name.isBlank())
+                                .map(name -> name + "企业")
+                                .orElse(user.getUsername() + "企业");
+                        employer.setCompanyName(defaultCompanyName);
+                        employer.setContactPerson(user.getFullName());
+                        employer.setContactEmail(user.getEmail());
+                        employer.setContactPhone(user.getPhone());
+                        employerService.save(employer);
+                    });
                 }
                 return ApiResponse.success("注册成功", UserResponse.from(user));
             } else {

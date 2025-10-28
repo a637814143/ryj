@@ -42,10 +42,14 @@ public class EmployerController {
     @GetMapping
     public ApiResponse<Page<Employer>> list(@RequestParam(defaultValue = "1") long page,
                                             @RequestParam(defaultValue = "10") long size,
-                                            @RequestParam(required = false) String keyword) {
+                                            @RequestParam(required = false) String keyword,
+                                            @RequestParam(required = false) Long userId) {
         LambdaQueryWrapper<Employer> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
             wrapper.like(Employer::getCompanyName, keyword);
+        }
+        if (userId != null) {
+            wrapper.eq(Employer::getUserId, userId);
         }
         Page<Employer> result = employerService.page(new Page<>(page, size), wrapper);
         return ApiResponse.success(result);

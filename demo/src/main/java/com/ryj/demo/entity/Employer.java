@@ -10,6 +10,7 @@ import lombok.Data;
 public class Employer {
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long userId;
     private String companyName;
     private String contactPerson;
     private String contactEmail;

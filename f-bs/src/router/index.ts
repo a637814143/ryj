@@ -12,6 +12,14 @@ import StudentInterviewsView from '../views/student/StudentInterviewsView.vue'
 import StudentIntentionView from '../views/student/StudentIntentionView.vue'
 import StudentJobBoardView from '../views/student/StudentJobBoardView.vue'
 
+// 企业专区页面
+import EmployerOverviewView from '../views/employer/EmployerOverviewView.vue'
+import EmployerProfileView from '../views/employer/EmployerProfileView.vue'
+import EmployerJobsView from '../views/employer/EmployerJobsView.vue'
+import EmployerApplicationsView from '../views/employer/EmployerApplicationsView.vue'
+import EmployerInterviewsView from '../views/employer/EmployerInterviewsView.vue'
+import EmployerTalentView from '../views/employer/EmployerTalentView.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -79,6 +87,43 @@ const router = createRouter({
       name: 'student-intention',
       component: StudentIntentionView,
       meta: { requiresAuth: true, role: 'STUDENT' },
+    },
+    // 企业专区路由 - 需要登录且用户角色为企业
+    {
+      path: '/employer/overview',
+      name: 'employer-overview',
+      component: EmployerOverviewView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/profile',
+      name: 'employer-profile',
+      component: EmployerProfileView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/jobs',
+      name: 'employer-jobs',
+      component: EmployerJobsView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/applications',
+      name: 'employer-applications',
+      component: EmployerApplicationsView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/interviews',
+      name: 'employer-interviews',
+      component: EmployerInterviewsView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    {
+      path: '/employer/talent',
+      name: 'employer-talent',
+      component: EmployerTalentView,
+      meta: { requiresAuth: true, role: 'EMPLOYER' },
     },
   ],
 })

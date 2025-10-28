@@ -7,6 +7,8 @@ const showUserMenu = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
 const isLoggedIn = ref(false)
 const currentUser = ref<{ username?: string; fullName?: string } | null>(null)
+const showLoginDialog = ref(false)
+const targetRoute = ref('')
 
 // 检查登录状态
 const checkLoginStatus = () => {
@@ -82,6 +84,57 @@ const logout = () => {
   router.push('/home')
 }
 
+// 显示登录对话框
+const openLoginDialog = (target: string = '') => {
+  targetRoute.value = target
+  showLoginDialog.value = true
+}
+
+// 关闭登录对话框
+const closeLoginDialog = () => {
+  showLoginDialog.value = false
+  targetRoute.value = ''
+}
+
+// 去登录
+const goToLogin = () => {
+  closeLoginDialog()
+  if (targetRoute.value) {
+    router.push({ name: 'login', query: { redirect: targetRoute.value } })
+  } else {
+    router.push('/login')
+  }
+}
+
+// 检查导航是否需要登录
+const handleNavClick = (event: Event, path: string) => {
+  // 如果已登录，直接放行
+  if (isLoggedIn.value) {
+    return
+  }
+
+  // 检查目标路径是否需要登录
+  const needsAuth = path.startsWith('/student/') || 
+                    path.startsWith('/employer/') || 
+                    path.startsWith('/teacher/') ||
+                    path.startsWith('/guidance/')
+
+  if (needsAuth) {
+    event.preventDefault()
+    event.stopPropagation()
+    openLoginDialog(path)
+  }
+}
+
+// 暴露给全局使用
+;(window as any).checkAuthAndNavigate = (path: string) => {
+  if (!isLoggedIn.value) {
+    openLoginDialog(path)
+    return false
+  }
+  return true
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   checkLoginStatus()
@@ -110,40 +163,40 @@ onUnmounted(() => {
         <div class="nav-dropdown">
           <span class="nav-link">学生专区 ▾</span>
           <div class="dropdown-menu">
-            <RouterLink to="/student/overview">学生总览</RouterLink>
-            <RouterLink to="/student/profile">个人档案</RouterLink>
-            <RouterLink to="/student/resume">简历管理</RouterLink>
-            <RouterLink to="/student/applications">求职申请</RouterLink>
-            <RouterLink to="/student/interviews">面试管理</RouterLink>
-            <RouterLink to="/student/intention">就业意向</RouterLink>
+            <RouterLink to="/student/overview" @click="(e) => handleNavClick(e, '/student/overview')">学生总览</RouterLink>
+            <RouterLink to="/student/profile" @click="(e) => handleNavClick(e, '/student/profile')">个人档案</RouterLink>
+            <RouterLink to="/student/resume" @click="(e) => handleNavClick(e, '/student/resume')">简历管理</RouterLink>
+            <RouterLink to="/student/applications" @click="(e) => handleNavClick(e, '/student/applications')">求职申请</RouterLink>
+            <RouterLink to="/student/interviews" @click="(e) => handleNavClick(e, '/student/interviews')">面试管理</RouterLink>
+            <RouterLink to="/student/intention" @click="(e) => handleNavClick(e, '/student/intention')">就业意向</RouterLink>
           </div>
         </div>
         
         <div class="nav-dropdown">
           <span class="nav-link">职位招聘 ▾</span>
           <div class="dropdown-menu">
-            <RouterLink to="/jobs/list">职位列表</RouterLink>
-            <RouterLink to="/jobs/search">职位搜索</RouterLink>
-            <RouterLink to="/jobs/my-applications">我的申请</RouterLink>
+            <RouterLink to="/jobs/list" @click="(e) => handleNavClick(e, '/jobs/list')">职位列表</RouterLink>
+            <RouterLink to="/jobs/search" @click="(e) => handleNavClick(e, '/jobs/search')">职位搜索</RouterLink>
+            <RouterLink to="/jobs/my-applications" @click="(e) => handleNavClick(e, '/jobs/my-applications')">我的申请</RouterLink>
           </div>
         </div>
         
         <div class="nav-dropdown">
           <span class="nav-link">企业专区 ▾</span>
           <div class="dropdown-menu">
-            <RouterLink to="/employer/info">企业信息</RouterLink>
-            <RouterLink to="/employer/post-job">发布职位</RouterLink>
-            <RouterLink to="/employer/applications">应聘管理</RouterLink>
-            <RouterLink to="/employer/interviews">面试安排</RouterLink>
+            <RouterLink to="/employer/info" @click="(e) => handleNavClick(e, '/employer/info')">企业信息</RouterLink>
+            <RouterLink to="/employer/post-job" @click="(e) => handleNavClick(e, '/employer/post-job')">发布职位</RouterLink>
+            <RouterLink to="/employer/applications" @click="(e) => handleNavClick(e, '/employer/applications')">应聘管理</RouterLink>
+            <RouterLink to="/employer/interviews" @click="(e) => handleNavClick(e, '/employer/interviews')">面试安排</RouterLink>
           </div>
         </div>
         
         <div class="nav-dropdown">
           <span class="nav-link">就业指导 ▾</span>
           <div class="dropdown-menu">
-            <RouterLink to="/guidance/records">指导记录</RouterLink>
-            <RouterLink to="/guidance/resources">资源下载</RouterLink>
-            <RouterLink to="/guidance/policies">就业政策</RouterLink>
+            <RouterLink to="/guidance/records" @click="(e) => handleNavClick(e, '/guidance/records')">指导记录</RouterLink>
+            <RouterLink to="/guidance/resources" @click="(e) => handleNavClick(e, '/guidance/resources')">资源下载</RouterLink>
+            <RouterLink to="/guidance/policies" @click="(e) => handleNavClick(e, '/guidance/policies')">就业政策</RouterLink>
           </div>
         </div>
         
@@ -224,6 +277,39 @@ onUnmounted(() => {
         <a href="#">隐私政策</a>
       </div>
     </footer>
+
+    <!-- 登录提示对话框 -->
+    <transition name="modal">
+      <div v-if="showLoginDialog" class="modal-overlay" @click="closeLoginDialog">
+        <div class="modal-dialog" @click.stop>
+          <div class="modal-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="modal-icon">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
+            <h3>需要登录</h3>
+            <button class="modal-close" @click="closeLoginDialog" aria-label="关闭">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>此功能需要登录后才能使用</p>
+            <p class="modal-hint">登录后您将可以访问完整的功能模块</p>
+          </div>
+          <div class="modal-footer">
+            <button class="modal-btn modal-btn-secondary" @click="closeLoginDialog">
+              稍后再说
+            </button>
+            <button class="modal-btn modal-btn-primary" @click="goToLogin">
+              立即登录
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -567,6 +653,195 @@ onUnmounted(() => {
 @media (max-width: 640px) {
   .app-shell__content {
     padding: 1.5rem 1.25rem 2.5rem;
+  }
+}
+
+/* 登录提示对话框样式 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal-dialog {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.3);
+  max-width: 480px;
+  width: 100%;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2.5rem 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(139, 92, 246, 0.08));
+}
+
+.modal-icon {
+  color: #2563eb;
+  animation: iconBounce 0.6s ease-out;
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(15, 23, 42, 0.05);
+  color: #64748b;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+.modal-body {
+  padding: 2rem;
+  text-align: center;
+}
+
+.modal-body p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.modal-hint {
+  margin-top: 0.75rem !important;
+  font-size: 0.95rem !important;
+  color: #64748b !important;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem 2rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-btn-secondary {
+  background: rgba(148, 163, 184, 0.1);
+  color: #475569;
+}
+
+.modal-btn-secondary:hover {
+  background: rgba(148, 163, 184, 0.2);
+  color: #1e293b;
+}
+
+.modal-btn-primary {
+  background: linear-gradient(135deg, #2563eb, #8b5cf6);
+  color: white;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.modal-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.4);
+}
+
+.modal-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* 模态框动画 */
+.modal-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.modal-leave-active {
+  transition: all 0.25s ease-in;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-dialog {
+  transform: translateY(-20px) scale(0.95);
+}
+
+.modal-leave-to .modal-dialog {
+  transform: translateY(10px) scale(0.98);
+}
+
+@media (max-width: 640px) {
+  .modal-dialog {
+    margin: 0 1rem;
+  }
+
+  .modal-header {
+    padding: 2rem 1.5rem 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    padding: 1.25rem 1.5rem 1.75rem;
   }
 }
 </style>

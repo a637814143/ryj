@@ -22,6 +22,9 @@ const message = ref('')
 const messageType = ref<'success' | 'error' | ''>('')
 const router = useRouter()
 
+// 获取重定向路径（用户原本想访问的页面）
+const redirectPath = router.currentRoute.value.query.redirect as string | undefined
+
 const submit = async () => {
   if (!form.username || !form.password) {
     message.value = '请输入用户名和密码'
@@ -45,8 +48,6 @@ const submit = async () => {
     const data = await response.json()
 
     if (response.ok && data.code === 200) {
-      message.value = '登录成功，正在进入首页...'
-      messageType.value = 'success'
       const payload = (data.data && data.data.user) as UserPayload | undefined
       if (payload) {
         // 保存用户信息到 localStorage
@@ -58,10 +59,16 @@ const submit = async () => {
           // 如果没有 token，创建一个临时标记表示已登录
           localStorage.setItem('token', 'logged-in')
         }
+        
+        // 根据用户角色和重定向路径确定跳转目标
+        const targetPath = redirectPath || (payload.role === 'STUDENT' ? '/student/overview' : '/home')
+        message.value = '登录成功，正在跳转...'
+        messageType.value = 'success'
+        
+        setTimeout(() => {
+          router.push(targetPath)
+        }, 400)
       }
-      setTimeout(() => {
-        router.push({ name: 'home' })
-      }, 400)
     } else {
       message.value = data.message || '用户名或密码错误'
       messageType.value = 'error'

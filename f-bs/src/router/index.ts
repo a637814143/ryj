@@ -23,54 +23,122 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: HomeView,
+      meta: { requiresAuth: false }, // 首页不需要登录
     },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta: { requiresAuth: false },
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
+      meta: { requiresAuth: false },
     },
-    // 学生专区路由
+    // 学生专区路由 - 需要登录且用户角色为学生
     {
       path: '/student/overview',
       name: 'student-overview',
       component: StudentOverviewView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
       path: '/student/profile',
       name: 'student-profile',
       component: StudentProfileView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
       path: '/student/resume',
       name: 'student-resume',
       component: StudentResumeView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
       path: '/student/applications',
       name: 'student-applications',
       component: StudentApplicationsView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
       path: '/student/jobs',
       name: 'student-jobs',
       component: StudentJobBoardView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
       path: '/student/interviews',
       name: 'student-interviews',
       component: StudentInterviewsView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
       path: '/student/intention',
       name: 'student-intention',
       component: StudentIntentionView,
+      meta: { requiresAuth: true, role: 'STUDENT' },
     },
   ],
+})
+
+// 全局路由守卫 - 拦截未登录用户
+router.beforeEach((to, from, next) => {
+  // 获取用户登录状态
+  const token = localStorage.getItem('token')
+  const userInfoStr = localStorage.getItem('userInfo')
+  
+  // 检查目标路由是否需要登录
+  const requiresAuth = to.meta.requiresAuth
+  
+  if (requiresAuth) {
+    // 需要登录的路由
+    if (!token || !userInfoStr) {
+      // 未登录，阻止导航并触发登录对话框
+      // 如果是从导航链接点击来的，对话框已经显示了，这里只需要阻止路由跳转
+      // 如果是直接通过URL访问，则显示对话框
+      if (from.name === undefined || from.path === '/') {
+        // 直接访问URL的情况，触发对话框
+        const openDialog = (window as any).checkAuthAndNavigate
+        if (openDialog) {
+          openDialog(to.fullPath)
+        }
+      }
+      // 阻止导航
+      next(false)
+      return
+    }
+    
+    // 已登录，检查用户角色
+    try {
+      const userInfo = JSON.parse(userInfoStr)
+      const requiredRole = to.meta.role as string | undefined
+      
+      if (requiredRole && userInfo.role !== requiredRole) {
+        // 角色不匹配，提示并返回首页
+        alert(`该功能需要 ${requiredRole} 角色权限`)
+        next({ name: 'home' })
+        return
+      }
+      
+      // 验证通过，允许访问
+      next()
+    } catch (error) {
+      // userInfo 解析失败，清除数据并显示登录对话框
+      console.error('用户信息解析失败:', error)
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      const openDialog = (window as any).checkAuthAndNavigate
+      if (openDialog) {
+        openDialog(to.fullPath)
+      }
+      next(false)
+    }
+  } else {
+    // 不需要登录的路由，直接放行
+    next()
+  }
 })
 
 export default router

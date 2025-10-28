@@ -69,6 +69,11 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'STUDENT' },
     },
     {
+      path: '/student/jobs',
+      name: 'student-jobs',
+      component: StudentJobBoardView,
+    },
+    {
       path: '/student/interviews',
       name: 'student-interviews',
       component: StudentInterviewsView,

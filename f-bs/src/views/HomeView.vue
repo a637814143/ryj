@@ -349,6 +349,70 @@ const formatFileSize = (size: number) => {
   return `${value.toFixed(value >= 10 || value < 1 ? 0 : 1)} ${units[unitIndex]}`
 }
 
+const getFileIcon = (fileType: string | null) => {
+  if (!fileType) return '📄'
+  const type = fileType.toLowerCase()
+  if (type.includes('pdf')) return '📕'
+  if (type.includes('word') || type.includes('doc')) return '📘'
+  if (type.includes('excel') || type.includes('sheet')) return '📊'
+  if (type.includes('powerpoint') || type.includes('presentation')) return '📙'
+  if (type.includes('image') || type.includes('png') || type.includes('jpg')) return '🖼️'
+  if (type.includes('video')) return '🎬'
+  if (type.includes('audio')) return '🎵'
+  if (type.includes('zip') || type.includes('rar')) return '📦'
+  if (type.includes('text')) return '📝'
+  return '📄'
+}
+
+const scrollToModule = (moduleKey: string) => {
+  // 定义模块键与元素ID的映射关系
+  const moduleIdMap: Record<string, string> = {
+    'job': 'job-module',
+    'employer': 'employer-module',
+    'notification': 'notification-module',
+    'resource': 'resource-module',
+  }
+
+  const targetId = moduleIdMap[moduleKey]
+  if (!targetId) return
+
+  const element = document.getElementById(targetId)
+  if (!element) return
+
+  // 计算需要滚动的位置，考虑顶部搜索栏的高度
+  const searchTopHeight = 80 // 顶部搜索区域的大致高度
+  const elementPosition = element.getBoundingClientRect().top
+  const offsetPosition = elementPosition + window.pageYOffset - searchTopHeight
+
+  // 平滑滚动到目标位置
+  window.scrollTo({
+    top: offsetPosition,
+    behavior: 'smooth'
+  })
+}
+
+const formatWorkType = (workType: string | null) => {
+  if (!workType) return '灵活'
+  const workTypeMap: Record<string, string> = {
+    'FULL_TIME': '全职',
+    'PART_TIME': '兼职',
+    'INTERNSHIP': '实习',
+    'REMOTE': '远程',
+  }
+  return workTypeMap[workType] || workType
+}
+
+const formatNotificationCategory = (category: string | null) => {
+  if (!category) return '系统'
+  const categoryMap: Record<string, string> = {
+    'SYSTEM': '系统',
+    'GUIDANCE': '指导',
+    'APPLICATION': '申请',
+    'INTERVIEW': '面试',
+  }
+  return categoryMap[category] || category
+}
+
 const initUser = () => {
   const raw = localStorage.getItem('ryj-current-user')
   if (!raw) return
@@ -370,6 +434,67 @@ onMounted(async () => {
 
 <template>
   <div class="home">
+    <!-- 顶部搜索区域 -->
+    <section class="search-top">
+      <div class="search-top__container">
+        <div class="search-top__input-wrapper">
+          <input
+            v-model.trim="searchForm.keyword"
+            type="text"
+            class="search-top__input"
+            placeholder="搜索职位、企业、通知或资料..."
+            @keyup.enter="performSearch"
+          />
+          <button
+            class="search-top__button"
+            type="button"
+            @click="performSearch"
+            :disabled="searchLoading"
+          >
+            <span class="search-icon">🔍</span>
+            {{ searchLoading ? '搜索中...' : '搜索' }}
+          </button>
+        </div>
+        
+        <!-- 快速筛选标签 -->
+        <div class="search-top__chips">
+          <button
+            v-for="item in availableCategories"
+            :key="item.key"
+            type="button"
+            class="search-chip"
+            :class="{ active: isCategoryActive(item.key) }"
+            @click="scrollToModule(item.key)"
+          >
+            {{ item.label }}
+          </button>
+        </div>
+        
+        <!-- 高级选项（可折叠） -->
+        <details class="search-top__advanced">
+          <summary>高级搜索选项</summary>
+          <div class="search-advanced__content">
+            <label class="search-field">
+              <span>面向角色</span>
+              <select v-model="searchForm.role">
+                <option value="ALL">全部角色</option>
+                <option value="STUDENT">学生</option>
+                <option value="TEACHER">教师</option>
+                <option value="EMPLOYER">企业</option>
+                <option value="ADMIN">管理员</option>
+              </select>
+            </label>
+            <label class="search-field">
+              <span>区域偏好</span>
+              <input v-model.trim="searchForm.location" type="text" placeholder="输入城市或地区" />
+            </label>
+          </div>
+        </details>
+        
+        <p v-if="searchError" class="search-top__error">{{ searchError }}</p>
+      </div>
+    </section>
+
     <section class="hero" v-if="overview">
       <div class="hero__content">
         <p class="hero__badge" v-for="badge in overview.hero.badges" :key="badge">{{ badge }}</p>
@@ -388,7 +513,7 @@ onMounted(async () => {
           </a>
         </div>
       </div>
-      <div class="hero__glass">
+      <div id="employer-module" class="hero__glass">
         <div class="hero__stat" v-if="statistics">
           <div>
             <p class="value">{{ statistics.totalJobs }}</p>
@@ -444,76 +569,6 @@ onMounted(async () => {
       </article>
     </section>
 
-    <section class="search">
-      <div class="search__panel">
-        <div class="search__header">
-          <div>
-            <h3>全局搜索</h3>
-            <p>跨角色检索岗位、通知、企业与公共资料</p>
-          </div>
-          <button class="search__action" type="button" @click="performSearch" :disabled="searchLoading">
-            {{ searchLoading ? '正在搜索...' : '开始搜索' }}
-          </button>
-        </div>
-
-        <div class="search__fields">
-          <label>
-            <span>关键字</span>
-            <input v-model.trim="searchForm.keyword" type="text" placeholder="输入职位、企业、通知主题等" />
-          </label>
-          <label>
-            <span>面向角色</span>
-            <select v-model="searchForm.role">
-              <option value="ALL">全部角色</option>
-              <option value="STUDENT">学生</option>
-              <option value="TEACHER">教师</option>
-              <option value="EMPLOYER">企业</option>
-              <option value="ADMIN">管理员</option>
-            </select>
-          </label>
-          <label>
-            <span>区域偏好</span>
-            <input v-model.trim="searchForm.location" type="text" placeholder="可选：输入城市或地区" />
-          </label>
-        </div>
-
-        <div class="search__filters">
-          <span class="search__filters-label">高级筛选</span>
-          <div class="search__chips">
-            <button
-              v-for="item in availableCategories"
-              :key="item.key"
-              type="button"
-              class="chip"
-              :class="{ active: isCategoryActive(item.key) }"
-              @click="toggleCategory(item.key)"
-            >
-              {{ item.label }}
-            </button>
-          </div>
-        </div>
-        <p v-if="searchError" class="search__error">{{ searchError }}</p>
-      </div>
-
-      <aside class="search__history" v-if="user">
-        <header>
-          <h4>最近搜索</h4>
-          <button type="button" @click="clearHistory" :disabled="!historyEntries.length">清空</button>
-        </header>
-        <div v-if="historyLoading" class="search__history-empty">加载中...</div>
-        <div v-else-if="!historyEntries.length" class="search__history-empty">暂无搜索记录</div>
-        <ul v-else>
-          <li v-for="entry in historyEntries" :key="entry.id">
-            <button type="button" @click="applyHistory(entry)">
-              <span>{{ entry.keyword }}</span>
-              <small>{{ formatDateTime(entry.createdAt) }}</small>
-            </button>
-            <span class="history__remove" @click.stop="removeHistory(entry)">×</span>
-          </li>
-        </ul>
-      </aside>
-    </section>
-
     <section class="results" v-if="searchResponse">
       <header>
         <div>
@@ -534,7 +589,7 @@ onMounted(async () => {
           <div class="result-card__meta">
             <span v-if="item.timestamp">{{ formatDateTime(item.timestamp) }}</span>
             <span v-if="item.metadata?.salaryRange">薪资：{{ item.metadata.salaryRange as string }}</span>
-            <span v-if="item.metadata?.workType">类型：{{ item.metadata.workType as string }}</span>
+            <span v-if="item.metadata?.workType">类型：{{ formatWorkType(item.metadata.workType as string) }}</span>
           </div>
           <a v-if="item.link" class="result-card__link" :href="item.link">查看详情 →</a>
         </article>
@@ -553,7 +608,7 @@ onMounted(async () => {
     </section>
 
     <section class="insights">
-      <div class="panel">
+      <div id="notification-module" class="panel">
         <header>
           <h3>即时通知</h3>
           <p>系统公告、面试邀请等关键信息同步呈现</p>
@@ -561,7 +616,7 @@ onMounted(async () => {
         <ul v-if="notifications.length">
           <li v-for="item in notifications" :key="item.id">
             <div>
-              <span class="tag">{{ item.category || 'SYSTEM' }}</span>
+              <span class="tag">{{ formatNotificationCategory(item.category) }}</span>
               <h4>{{ item.title }}</h4>
               <p>{{ item.content }}</p>
             </div>
@@ -571,7 +626,7 @@ onMounted(async () => {
         <div v-else class="empty">暂无通知</div>
       </div>
 
-      <div class="panel">
+      <div id="job-module" class="panel">
         <header>
           <h3>热门职位</h3>
           <p>根据实时投递热度与发布时间推荐</p>
@@ -580,7 +635,7 @@ onMounted(async () => {
           <li v-for="job in trendingJobs" :key="job.id">
             <div>
               <h4>{{ job.title }}</h4>
-              <p>{{ job.location }} · {{ job.workType || '灵活' }}</p>
+              <p>{{ job.location }} · {{ formatWorkType(job.workType) }}</p>
               <small>{{ job.salaryRange || '薪资面议' }}</small>
             </div>
             <time>{{ formatDateTime(job.publishedDate) }}</time>
@@ -590,39 +645,83 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section class="resources">
+    <section id="resource-module" class="resources">
       <div class="resources__header">
-        <div>
-          <h3>公共资料中心</h3>
-          <p>面向所有角色开放的模板、政策与指引</p>
+        <div class="header-content">
+          <div class="header-icon">📚</div>
+          <div class="header-text">
+            <h2>公共资料中心</h2>
+            <p>面向所有角色开放的模板、政策与指引文档</p>
+          </div>
         </div>
-        <div class="upload" v-if="user">
-          <label class="upload__input">
-            <input type="file" @change="handleFileSelect" />
-            <span>{{ selectedFile ? selectedFile.name : '选择文件' }}</span>
-          </label>
-          <input v-model.trim="uploadDescription" type="text" placeholder="添加文件描述（可选）" />
-          <button type="button" @click="uploadResource" :disabled="resourceUploadLoading">
-            {{ resourceUploadLoading ? '上传中...' : '上传共享' }}
-          </button>
-          <p v-if="resourceUploadMessage" class="upload__message">{{ resourceUploadMessage }}</p>
+        
+        <!-- 上传区域 -->
+        <div class="upload-section" v-if="user">
+          <div class="upload-card">
+            <div class="upload-header">
+              <span class="upload-icon">⬆️</span>
+              <h3>上传资料</h3>
+            </div>
+            <div class="upload-form">
+              <label class="file-select">
+                <input type="file" @change="handleFileSelect" hidden />
+                <div class="file-select-button">
+                  <span class="file-icon">📎</span>
+                  <span class="file-text">{{ selectedFile ? selectedFile.name : '点击选择文件' }}</span>
+                </div>
+              </label>
+              <input 
+                v-model.trim="uploadDescription" 
+                type="text" 
+                class="upload-description" 
+                placeholder="文件描述（可选）" 
+              />
+              <button 
+                type="button" 
+                class="upload-button" 
+                @click="uploadResource" 
+                :disabled="resourceUploadLoading || !selectedFile"
+              >
+                <span class="button-icon">{{ resourceUploadLoading ? '⏳' : '✓' }}</span>
+                {{ resourceUploadLoading ? '上传中...' : '上传共享' }}
+              </button>
+            </div>
+            <p v-if="resourceUploadMessage" class="upload-message">{{ resourceUploadMessage }}</p>
+          </div>
         </div>
       </div>
 
-      <div class="resources__grid" v-if="resources.length">
+      <!-- 资源列表（横向滚动） -->
+      <div v-if="resources.length" class="resources-scroll">
         <article v-for="item in resources" :key="item.id" class="resource-card">
-          <header>
-            <h4>{{ item.fileName }}</h4>
-            <span>{{ formatFileSize(item.fileSize) }}</span>
-          </header>
-          <p>{{ item.description || '公共资料文件' }}</p>
-          <footer>
-            <time>{{ formatDateTime(item.createdAt) }}</time>
-            <a :href="`${API_BASE}${item.downloadUrl}`" target="_blank">下载</a>
-          </footer>
+          <div class="resource-card-icon">
+            <span>{{ getFileIcon(item.fileType) }}</span>
+          </div>
+          <div class="resource-card-content">
+            <h4 class="resource-card-title">{{ item.fileName }}</h4>
+            <p class="resource-card-desc">{{ item.description || '暂无描述' }}</p>
+            <div class="resource-card-meta">
+              <span class="meta-badge">
+                <span class="meta-icon">📦</span>
+                {{ formatFileSize(item.fileSize) }}
+              </span>
+              <span class="meta-badge">
+                <span class="meta-icon">🕒</span>
+                {{ formatDateTime(item.createdAt) }}
+              </span>
+            </div>
+          </div>
+          <a :href="`${API_BASE}${item.downloadUrl}`" target="_blank" class="resource-download-btn">
+            <span class="download-icon">⬇</span>
+            <span>下载</span>
+          </a>
         </article>
       </div>
-      <div v-else class="resources__empty">暂无公共资料，可上传共享文件。</div>
+      <div v-else class="resources-empty">
+        <div class="empty-icon">📭</div>
+        <p>暂无公共资料</p>
+        <small v-if="user">点击上方上传按钮分享资料</small>
+      </div>
     </section>
   </div>
 </template>
@@ -635,7 +734,196 @@ onMounted(async () => {
   color: #1d1d1f;
   background: linear-gradient(to bottom, #f5f5f7 0%, #ffffff 100%);
   min-height: 100vh;
-  padding: 2rem 0;
+  padding: 0;
+}
+
+/* ===== 顶部搜索区域（超紧凑版）===== */
+.search-top {
+  background: #ffffff;
+  padding: 0.75rem 2rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.search-top__container {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-top__input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-top__input {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.search-top__input::placeholder {
+  color: #86868b;
+}
+
+.search-top__input:focus {
+  outline: none;
+  border-color: #0071e3;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.08);
+}
+
+.search-top__button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 113, 227, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.search-top__button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0077ed 0%, #0081f7 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 113, 227, 0.28);
+}
+
+.search-top__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.search-icon {
+  font-size: 0.9375rem;
+}
+
+.search-top__chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.search-chip {
+  padding: 0.4375rem 0.875rem;
+  border-radius: 100px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: #f5f5f7;
+  color: #1d1d1f;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-chip:hover {
+  background: #e8e8ed;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.search-chip.active {
+  background: #0071e3;
+  border-color: #0071e3;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 113, 227, 0.18);
+}
+
+.search-top__advanced {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 0.375rem;
+  margin-top: 0.125rem;
+}
+
+.search-top__advanced summary {
+  cursor: pointer;
+  color: #0071e3;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.25rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  user-select: none;
+}
+
+.search-top__advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.search-top__advanced summary::after {
+  content: '▼';
+  font-size: 0.625rem;
+  transition: transform 0.3s ease;
+}
+
+.search-top__advanced[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.search-advanced__content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.625rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.search-field span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.search-field input,
+.search-field select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: #f5f5f7;
+  font-size: 0.8125rem;
+  color: #1d1d1f;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-field input:focus,
+.search-field select:focus {
+  outline: none;
+  border-color: #0071e3;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.08);
+}
+
+.search-top__error {
+  margin: 0;
+  color: #ff3b30;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: center;
 }
 
 .hero {
@@ -650,6 +938,8 @@ onMounted(async () => {
   color: white;
   box-shadow: 0 20px 60px rgba(0, 113, 227, 0.35), 0 8px 16px rgba(0, 0, 0, 0.15);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 1.5rem auto 0;
+  max-width: 1600px;
 }
 
 .hero:hover {
@@ -914,6 +1204,9 @@ onMounted(async () => {
   display: grid;
   gap: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin: 0 auto;
+  max-width: 1600px;
+  padding: 0 2rem;
 }
 
 .module {
@@ -998,279 +1291,6 @@ onMounted(async () => {
   padding-left: 0.25rem;
 }
 
-.search {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-}
-
-.search__panel {
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 2rem 1.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search__panel:hover {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-
-.search__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.search__header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1d1d1f;
-  letter-spacing: -0.02em;
-}
-
-.search__header p {
-  margin: 0;
-  color: #6e6e73;
-  font-size: 0.9375rem;
-}
-
-.search__action {
-  background: linear-gradient(135deg, #0071e3 0%, #5e5ce6 100%);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  padding: 0.875rem 1.75rem;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.3);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.search__action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.search__action:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 113, 227, 0.4);
-  background: linear-gradient(135deg, #0077ed 0%, #6866ef 100%);
-}
-
-.search__fields {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-.search__fields label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #1d1d1f;
-  font-size: 0.9375rem;
-}
-
-.search__fields input,
-.search__fields select {
-  padding: 0.875rem 1.125rem;
-  border-radius: 12px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: #f5f5f7;
-  font-size: 0.9375rem;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #1d1d1f;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.search__fields input::placeholder {
-  color: #86868b;
-}
-
-.search__fields input:focus,
-.search__fields select:focus {
-  outline: none;
-  border-color: #0071e3;
-  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
-  background: #ffffff;
-}
-
-.search__filters {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-}
-
-.search__filters-label {
-  font-size: 0.8125rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #86868b;
-  font-weight: 600;
-}
-
-.search__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.625rem;
-}
-
-.chip {
-  padding: 0.625rem 1.25rem;
-  border-radius: 100px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: #f5f5f7;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #1d1d1f;
-}
-
-.chip:hover {
-  background: #e8e8ed;
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-.chip.active {
-  border-color: #0071e3;
-  background: #0071e3;
-  color: white;
-  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
-}
-
-.search__error {
-  margin: 0;
-  color: #ff3b30;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.search__history {
-  background: linear-gradient(135deg, #1d1d1f 0%, #2d2d2f 100%);
-  color: white;
-  border-radius: 24px;
-  padding: 1.75rem 1.5rem;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-.search__history header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
-}
-
-.search__history h4 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-}
-
-.search__history button {
-  border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: white;
-  border-radius: 100px;
-  padding: 0.5rem 1.125rem;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.875rem;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search__history button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.search__history button:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
-}
-
-.search__history ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
-.search__history li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 0.875rem 1.125rem;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.search__history li:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateX(4px);
-}
-
-.search__history li button {
-  all: unset;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  cursor: pointer;
-  flex: 1;
-}
-
-.search__history li span {
-  font-weight: 600;
-  color: white;
-  font-size: 0.9375rem;
-}
-
-.search__history li small {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.75rem;
-}
-
-.history__remove {
-  font-size: 1.375rem;
-  cursor: pointer;
-  padding: 0.25rem 0.625rem;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1;
-  transition: all 0.2s ease;
-}
-
-.history__remove:hover {
-  background: rgba(255, 59, 48, 0.8);
-  color: white;
-}
-
-.search__history-empty {
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  padding: 1.5rem 0;
-  font-size: 0.9375rem;
-}
-
 .results {
   background: #ffffff;
   border-radius: 24px;
@@ -1280,6 +1300,8 @@ onMounted(async () => {
   flex-direction: column;
   gap: 1.5rem;
   border: 1px solid rgba(0, 0, 0, 0.04);
+  margin: 0 auto;
+  max-width: 1600px;
 }
 
 .results header {
@@ -1426,6 +1448,9 @@ onMounted(async () => {
   display: grid;
   gap: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  margin: 0 auto;
+  max-width: 1600px;
+  padding: 0 2rem;
 }
 
 .panel {
@@ -1545,15 +1570,15 @@ onMounted(async () => {
   font-size: 0.9375rem;
 }
 
+/* ===== 公共资料中心（重新设计）===== */
 .resources {
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 24px;
-  padding: 2rem 1.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin: 0 auto 2rem;
+  max-width: 1600px;
 }
 
 .resources__header {
@@ -1561,213 +1586,363 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
 
-.resources__header h3 {
-  margin: 0 0 0.375rem 0;
-  font-size: 1.5rem;
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.header-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.header-text h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
   font-weight: 700;
   color: #1d1d1f;
   letter-spacing: -0.02em;
 }
 
-.resources__header p {
+.header-text p {
   margin: 0;
   color: #6e6e73;
   font-size: 0.9375rem;
 }
 
-.upload {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  align-items: center;
+/* 上传区域 */
+.upload-section {
   flex: 1;
   min-width: 300px;
 }
 
-.upload__input {
-  position: relative;
-  display: inline-flex;
+.upload-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 2px dashed rgba(0, 113, 227, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.upload-card:hover {
+  border-color: rgba(0, 113, 227, 0.4);
+  background: #f8fafc;
+}
+
+.upload-header {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.875rem 1.375rem;
-  border-radius: 12px;
-  background: #f5f5f7;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.upload-icon {
+  font-size: 1.5rem;
+}
+
+.upload-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
   color: #1d1d1f;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.file-select {
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.file-select-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  background: #f5f5f7;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.upload__input:hover {
+.file-select-button:hover {
   background: #e8e8ed;
-  border-color: rgba(0, 113, 227, 0.3);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
-.upload__input input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
+.file-icon {
+  font-size: 1.25rem;
 }
 
-.upload input[type='text'] {
+.file-text {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-description {
   padding: 0.875rem 1.125rem;
   border-radius: 12px;
   border: 1.5px solid rgba(0, 0, 0, 0.1);
   background: #f5f5f7;
   font-size: 0.9375rem;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: #1d1d1f;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.upload input[type='text']:focus {
+.upload-description:focus {
   outline: none;
   border-color: #0071e3;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
 }
 
-.upload button {
+.upload-button {
   padding: 0.875rem 1.5rem;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  color: #ffffff;
   border: none;
-  background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
-  color: white;
-  font-weight: 600;
+  border-radius: 12px;
   font-size: 0.9375rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(52, 199, 89, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.upload button:disabled {
+.upload-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0077ed 0%, #0081f7 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.35);
+}
+
+.upload-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-.upload button:not(:disabled):hover {
-  background: linear-gradient(135deg, #2fb350 0%, #2bc04f 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(52, 199, 89, 0.3);
+.button-icon {
+  font-size: 1.125rem;
 }
 
-.upload__message {
-  grid-column: 1 / -1;
-  margin: 0;
+.upload-message {
+  margin: 0.75rem 0 0 0;
+  color: #0071e3;
   font-size: 0.875rem;
-  color: #1d1d1f;
   font-weight: 500;
+  text-align: center;
 }
 
-.resources__grid {
-  display: grid;
+/* 资源列表（横向滚动） */
+.resources-scroll {
+  display: flex;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0.25rem 1rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 自定义滚动条 */
+.resources-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.resources-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 100px;
+}
+
+.resources-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 113, 227, 0.3);
+  border-radius: 100px;
+  transition: background 0.2s ease;
+}
+
+.resources-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 113, 227, 0.5);
 }
 
 .resource-card {
-  border-radius: 18px;
-  padding: 1.5rem 1.375rem;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  width: 320px;
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 1.25rem;
+  padding: 1.75rem 1.5rem;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .resource-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
-  border-color: rgba(52, 199, 89, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 113, 227, 0.2);
 }
 
-.resource-card header {
+.resource-card-icon {
+  width: 4.5rem;
+  height: 4.5rem;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+  border-radius: 16px;
+  font-size: 2.5rem;
+  align-self: center;
 }
 
-.resource-card h4 {
+.resource-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resource-card-title {
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 700;
   color: #1d1d1f;
-  letter-spacing: -0.01em;
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.resource-card header span {
-  font-size: 0.75rem;
-  color: #86868b;
-  font-weight: 600;
-  white-space: nowrap;
-  background: #f5f5f7;
-  padding: 0.25rem 0.625rem;
-  border-radius: 6px;
-}
-
-.resource-card p {
+.resource-card-desc {
   margin: 0;
-  color: #6e6e73;
   font-size: 0.875rem;
+  color: #6e6e73;
   line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.resource-card footer {
+.resource-card-meta {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-top: auto;
+}
+
+.meta-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  font-size: 0.8125rem;
-  color: #86868b;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.resource-card a {
-  color: #34c759;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #f5f5f7;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  color: #6e6e73;
   font-weight: 600;
+}
+
+.meta-icon {
+  font-size: 0.9375rem;
+}
+
+.resource-download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #0071e3 0%, #0077ed 100%);
+  color: #ffffff;
   text-decoration: none;
+  border-radius: 12px;
   font-size: 0.9375rem;
-  transition: color 0.2s ease;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.25);
 }
 
-.resource-card a:hover {
-  color: #2fb350;
+.resource-download-btn:hover {
+  background: linear-gradient(135deg, #0077ed 0%, #0081f7 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.35);
 }
 
-.resources__empty {
+.download-icon {
+  font-size: 1.125rem;
+}
+
+/* 空状态 */
+.resources-empty {
   text-align: center;
+  padding: 3rem 2rem;
   color: #86868b;
-  padding: 2rem 0;
-  font-size: 0.9375rem;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.resources-empty p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6e6e73;
+}
+
+.resources-empty small {
+  font-size: 0.875rem;
+  color: #86868b;
 }
 
 @media (max-width: 1024px) {
+  /* 顶部搜索 */
+  .search-top {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .search-advanced__content {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hero */
   .hero {
     grid-template-columns: 1fr;
     padding: 2.5rem 2rem;
+    margin: 1.5rem 1.5rem 0;
   }
 
   .hero h2 {
     font-size: 2.25rem;
   }
 
-  .search {
-    grid-template-columns: 1fr;
-  }
-
-  .search__history {
-    order: -1;
+  /* 其他区域 */
+  .modules,
+  .insights {
+    padding: 0 1.5rem;
   }
 
   .resources__header {
@@ -1783,12 +1958,43 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .home {
     gap: 1.5rem;
-    padding: 1rem 0;
   }
 
+  /* 顶部搜索 */
+  .search-top {
+    padding: 0.75rem 1rem;
+  }
+
+  .search-top__container {
+    gap: 0.625rem;
+  }
+
+  .search-top__input-wrapper {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-top__button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+  }
+
+  .search-top__chips {
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .search-chip {
+    font-size: 0.8125rem;
+    padding: 0.4375rem 0.875rem;
+  }
+
+  /* Hero */
   .hero {
     padding: 2rem 1.5rem;
     border-radius: 20px;
+    margin: 1rem 1rem 0;
   }
 
   .hero h2 {
@@ -1799,12 +2005,16 @@ onMounted(async () => {
     font-size: 1rem;
   }
 
+  /* 其他区域 */
+  .modules,
+  .insights {
+    padding: 0 1rem;
+  }
+
   .modules {
     grid-template-columns: 1fr;
   }
 
-  .search__panel,
-  .search__history,
   .results,
   .panel,
   .resources {
@@ -1812,19 +2022,20 @@ onMounted(async () => {
     padding: 1.5rem 1.25rem;
   }
 
-  .search__header h3,
   .results header h3,
-  .panel header h3,
-  .resources__header h3 {
+  .panel header h3 {
     font-size: 1.25rem;
   }
 
-  .search__fields {
-    grid-template-columns: 1fr;
+  .header-text h2 {
+    font-size: 1.5rem;
   }
 
-  .results__grid,
-  .resources__grid {
+  .resource-card {
+    width: 280px;
+  }
+
+  .results__grid {
     grid-template-columns: 1fr;
   }
 
@@ -1834,6 +2045,31 @@ onMounted(async () => {
 }
 
 @media (max-width: 480px) {
+  /* 顶部搜索 */
+  .search-top {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .search-top__input {
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+  }
+
+  .search-top__button {
+    font-size: 0.875rem;
+    padding: 0.625rem;
+  }
+
+  .search-chip {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .search-top__advanced summary {
+    font-size: 0.75rem;
+  }
+
+  /* Hero */
   .hero {
     padding: 1.5rem 1.25rem;
   }
@@ -1846,17 +2082,37 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
-  .search__action {
-    width: 100%;
+  /* 上传 */
+  .upload-section {
+    min-width: 100%;
   }
 
-  .search__header {
+  .header-icon {
+    font-size: 2.5rem;
+  }
+
+  .header-text h2 {
+    font-size: 1.375rem;
+  }
+
+  .resource-card {
+    width: 260px;
+  }
+
+  .resource-card-icon {
+    width: 4rem;
+    height: 4rem;
+    font-size: 2.25rem;
+  }
+
+  .header-content {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 1rem;
   }
 
-  .upload {
-    grid-template-columns: 1fr;
+  .header-icon {
+    font-size: 2.5rem;
   }
 }
 </style>

@@ -12,6 +12,7 @@ const targetRoute = ref('')
 const currentRole = computed(() => currentUser.value?.role ?? null)
 const isStudentRole = computed(() => currentRole.value === 'STUDENT')
 const isEmployerRole = computed(() => currentRole.value === 'EMPLOYER')
+const isTeacherRole = computed(() => currentRole.value === 'TEACHER')
 
 // 检查登录状态
 const checkLoginStatus = () => {
@@ -193,6 +194,15 @@ onUnmounted(() => {
             <RouterLink to="/employer/applications" @click="(e) => handleNavClick(e, '/employer/applications')">应聘管理</RouterLink>
             <RouterLink to="/employer/interviews" @click="(e) => handleNavClick(e, '/employer/interviews')">面试安排</RouterLink>
             <RouterLink to="/employer/talent" @click="(e) => handleNavClick(e, '/employer/talent')">人才库</RouterLink>
+          </div>
+        </div>
+
+        <div class="nav-dropdown" v-if="isTeacherRole">
+          <span class="nav-link">教师专区 ▾</span>
+          <div class="dropdown-menu">
+            <RouterLink to="/teacher/overview" @click="(e) => handleNavClick(e, '/teacher/overview')">教学驾驶舱</RouterLink>
+            <RouterLink :to="{ name: 'teacher-overview', query: { section: 'approvals' } }" @click="(e) => handleNavClick(e, '/teacher/overview')">档案审核</RouterLink>
+            <RouterLink :to="{ name: 'teacher-overview', query: { section: 'collaboration' } }" @click="(e) => handleNavClick(e, '/teacher/overview')">校企协同</RouterLink>
           </div>
         </div>
         

@@ -4,12 +4,12 @@ USE bb;
 -- 1. 基础用户（管理员、教师、学生）
 INSERT INTO sys_user (id, username, password_hash, full_name, email, phone, role, status, created_at, updated_at) VALUES
     (9001, 'admin_portal', '$2a$10$abcdefghijklmnopqrstuv', '就业办管理员', 'career-admin@university.edu.cn', '010-10000001', 'ADMIN', 'ACTIVE', '2024-02-01 09:00:00', '2024-02-01 09:00:00'),
-    (2001, 'teacher_liu', '$2a$10$abcdefghijklmnopqrstuv', '刘畅', 'liu.chang@university.edu.cn', '010-10000021', 'TEACHER', 'ACTIVE', '2024-02-02 09:00:00', '2024-02-02 09:00:00'),
-    (2002, 'teacher_wang', '$2a$10$abcdefghijklmnopqrstuv', '王璐', 'wang.lu@university.edu.cn', '010-10000022', 'TEACHER', 'ACTIVE', '2024-02-02 09:05:00', '2024-02-02 09:05:00'),
-    (2003, 'teacher_zhao', '$2a$10$abcdefghijklmnopqrstuv', '赵楠', 'zhao.nan@university.edu.cn', '010-10000023', 'TEACHER', 'ACTIVE', '2024-02-02 09:10:00', '2024-02-02 09:10:00'),
-    (3001, 'student_han', '$2a$10$abcdefghijklmnopqrstuv', '韩雪', 'han.xue@student.edu.cn', '13600000001', 'STUDENT', 'ACTIVE', '2024-02-03 10:00:00', '2024-02-03 10:00:00'),
-    (3002, 'student_chen', '$2a$10$abcdefghijklmnopqrstuv', '陈宇', 'chen.yu@student.edu.cn', '13600000002', 'STUDENT', 'ACTIVE', '2024-02-03 10:05:00', '2024-02-03 10:05:00'),
-    (3003, 'student_li', '$2a$10$abcdefghijklmnopqrstuv', '李想', 'li.xiang@student.edu.cn', '13600000003', 'STUDENT', 'ACTIVE', '2024-02-03 10:10:00', '2024-02-03 10:10:00')
+    (2001, 'teacher_liu', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '刘畅', 'liu.chang@university.edu.cn', '010-10000021', 'TEACHER', 'ACTIVE', '2024-02-02 09:00:00', '2024-02-02 09:00:00'),
+    (2002, 'teacher_wang', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '王璐', 'wang.lu@university.edu.cn', '010-10000022', 'TEACHER', 'ACTIVE', '2024-02-02 09:05:00', '2024-02-02 09:05:00'),
+    (2003, 'teacher_zhao', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '赵楠', 'zhao.nan@university.edu.cn', '010-10000023', 'TEACHER', 'ACTIVE', '2024-02-02 09:10:00', '2024-02-02 09:10:00'),
+    (3001, 'student_han', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '韩雪', 'han.xue@student.edu.cn', '13600000001', 'STUDENT', 'ACTIVE', '2024-02-03 10:00:00', '2024-02-03 10:00:00'),
+    (3002, 'student_chen', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '陈宇', 'chen.yu@student.edu.cn', '13600000002', 'STUDENT', 'ACTIVE', '2024-02-03 10:05:00', '2024-02-03 10:05:00'),
+    (3003, 'student_li', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '李想', 'li.xiang@student.edu.cn', '13600000003', 'STUDENT', 'ACTIVE', '2024-02-03 10:10:00', '2024-02-03 10:10:00')
 ON DUPLICATE KEY UPDATE
     full_name = VALUES(full_name),
     email = VALUES(email),

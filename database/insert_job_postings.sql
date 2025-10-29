@@ -3,14 +3,14 @@ USE bb;
 
 -- 1. 先创建企业用户和企业信息
 INSERT INTO sys_user (id, username, password_hash, full_name, email, phone, role, status, created_at, updated_at) VALUES
-    (4001, 'employer_tencent', '$2a$10$abcdefghijklmnopqrstuv', '腾讯科技', 'hr@tencent.com', '0755-86013388', 'EMPLOYER', 'ACTIVE', '2024-01-10 09:00:00', '2024-01-10 09:00:00'),
-    (4002, 'employer_alibaba', '$2a$10$abcdefghijklmnopqrstuv', '阿里巴巴', 'hr@alibaba.com', '0571-85022088', 'EMPLOYER', 'ACTIVE', '2024-01-11 09:00:00', '2024-01-11 09:00:00'),
-    (4003, 'employer_bytedance', '$2a$10$abcdefghijklmnopqrstuv', '字节跳动', 'hr@bytedance.com', '010-84594000', 'EMPLOYER', 'ACTIVE', '2024-01-12 09:00:00', '2024-01-12 09:00:00'),
-    (4004, 'employer_huawei', '$2a$10$abcdefghijklmnopqrstuv', '华为技术', 'hr@huawei.com', '0755-28780808', 'EMPLOYER', 'ACTIVE', '2024-01-13 09:00:00', '2024-01-13 09:00:00'),
-    (4005, 'employer_baidu', '$2a$10$abcdefghijklmnopqrstuv', '百度', 'hr@baidu.com', '010-59928888', 'EMPLOYER', 'ACTIVE', '2024-01-14 09:00:00', '2024-01-14 09:00:00'),
-    (4006, 'employer_meituan', '$2a$10$abcdefghijklmnopqrstuv', '美团', 'hr@meituan.com', '010-84594000', 'EMPLOYER', 'ACTIVE', '2024-01-15 09:00:00', '2024-01-15 09:00:00'),
-    (4007, 'employer_jd', '$2a$10$abcdefghijklmnopqrstuv', '京东', 'hr@jd.com', '010-59993000', 'EMPLOYER', 'ACTIVE', '2024-01-16 09:00:00', '2024-01-16 09:00:00'),
-    (4008, 'employer_netease', '$2a$10$abcdefghijklmnopqrstuv', '网易', 'hr@163.com', '020-85105163', 'EMPLOYER', 'ACTIVE', '2024-01-17 09:00:00', '2024-01-17 09:00:00')
+    (4001, 'employer_tencent', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '腾讯科技', 'hr@tencent.com', '0755-86013388', 'EMPLOYER', 'ACTIVE', '2024-01-10 09:00:00', '2024-01-10 09:00:00'),
+    (4002, 'employer_alibaba', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '阿里巴巴', 'hr@alibaba.com', '0571-85022088', 'EMPLOYER', 'ACTIVE', '2024-01-11 09:00:00', '2024-01-11 09:00:00'),
+    (4003, 'employer_bytedance', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '字节跳动', 'hr@bytedance.com', '010-84594000', 'EMPLOYER', 'ACTIVE', '2024-01-12 09:00:00', '2024-01-12 09:00:00'),
+    (4004, 'employer_huawei', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '华为技术', 'hr@huawei.com', '0755-28780808', 'EMPLOYER', 'ACTIVE', '2024-01-13 09:00:00', '2024-01-13 09:00:00'),
+    (4005, 'employer_baidu', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '百度', 'hr@baidu.com', '010-59928888', 'EMPLOYER', 'ACTIVE', '2024-01-14 09:00:00', '2024-01-14 09:00:00'),
+    (4006, 'employer_meituan', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '美团', 'hr@meituan.com', '010-84594000', 'EMPLOYER', 'ACTIVE', '2024-01-15 09:00:00', '2024-01-15 09:00:00'),
+    (4007, 'employer_jd', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '京东', 'hr@jd.com', '010-59993000', 'EMPLOYER', 'ACTIVE', '2024-01-16 09:00:00', '2024-01-16 09:00:00'),
+    (4008, 'employer_netease', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '网易', 'hr@163.com', '020-85105163', 'EMPLOYER', 'ACTIVE', '2024-01-17 09:00:00', '2024-01-17 09:00:00')
 ON DUPLICATE KEY UPDATE
     full_name = VALUES(full_name),
     email = VALUES(email),

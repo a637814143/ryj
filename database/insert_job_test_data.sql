@@ -3,14 +3,14 @@ USE bb;
 
 -- 0. 插入企业用户账号
 INSERT INTO sys_user (id, username, password_hash, full_name, email, phone, role, status) VALUES
-(1001, 'employer_bytedance', '$2a$10$abcdefghijklmnopqrstuv', '张经理', 'hr@bytedance.com', '010-12345678', 'EMPLOYER', 'ACTIVE'),
-(1002, 'employer_tencent', '$2a$10$abcdefghijklmnopqrstuv', '李主管', 'recruitment@tencent.com', '0755-86013388', 'EMPLOYER', 'ACTIVE'),
-(1003, 'employer_alibaba', '$2a$10$abcdefghijklmnopqrstuv', '王总监', 'jobs@alibaba.com', '0571-85022088', 'EMPLOYER', 'ACTIVE'),
-(1004, 'employer_meituan', '$2a$10$abcdefghijklmnopqrstuv', '赵女士', 'campus@meituan.com', '010-53658000', 'EMPLOYER', 'ACTIVE'),
-(1005, 'employer_netease', '$2a$10$abcdefghijklmnopqrstuv', '陈经理', 'hr@163.com', '020-85105163', 'EMPLOYER', 'ACTIVE'),
-(1006, 'employer_jd', '$2a$10$abcdefghijklmnopqrstuv', '刘主管', 'zhaopin@jd.com', '010-89127000', 'EMPLOYER', 'ACTIVE'),
-(1007, 'employer_baidu', '$2a$10$abcdefghijklmnopqrstuv', '孙经理', 'baidu_hr@baidu.com', '010-59928888', 'EMPLOYER', 'ACTIVE'),
-(1008, 'employer_xiaomi', '$2a$10$abcdefghijklmnopqrstuv', '周女士', 'talent@xiaomi.com', '010-60606666', 'EMPLOYER', 'ACTIVE');
+(1001, 'employer_bytedance', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '张经理', 'hr@bytedance.com', '010-12345678', 'EMPLOYER', 'ACTIVE'),
+(1002, 'employer_tencent', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '李主管', 'recruitment@tencent.com', '0755-86013388', 'EMPLOYER', 'ACTIVE'),
+(1003, 'employer_alibaba', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '王总监', 'jobs@alibaba.com', '0571-85022088', 'EMPLOYER', 'ACTIVE'),
+(1004, 'employer_meituan', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '赵女士', 'campus@meituan.com', '010-53658000', 'EMPLOYER', 'ACTIVE'),
+(1005, 'employer_netease', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '陈经理', 'hr@163.com', '020-85105163', 'EMPLOYER', 'ACTIVE'),
+(1006, 'employer_jd', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '刘主管', 'zhaopin@jd.com', '010-89127000', 'EMPLOYER', 'ACTIVE'),
+(1007, 'employer_baidu', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '孙经理', 'baidu_hr@baidu.com', '010-59928888', 'EMPLOYER', 'ACTIVE'),
+(1008, 'employer_xiaomi', '$2b$10$LNavVgcJM96eJf6EQRDuvejufLebKoW.QL6DIrFjQxEaUQLq5CI5S', '周女士', 'talent@xiaomi.com', '010-60606666', 'EMPLOYER', 'ACTIVE');
 
 -- 1. 插入企业信息
 INSERT INTO employer (id, user_id, company_name, contact_person, contact_email, contact_phone, description, website) VALUES

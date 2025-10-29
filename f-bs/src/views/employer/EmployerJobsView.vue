@@ -410,63 +410,73 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 整体布局 */
+/* ===== Apple级美工设计 ===== */
+
+/* 整体布局 - 优雅渐变背景 */
 .jobs-page {
-  max-width: 1280px;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 4rem;
+  padding: 3rem 1.5rem 5rem;
   min-height: 100vh;
+  background: linear-gradient(to bottom, #fafbfc 0%, #ffffff 40%);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* 页头 */
+/* 页头 - Apple风格 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 2rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  margin-bottom: 2.75rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .title-block h1 {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #1e293b, #475569);
+  font-size: 2.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0a0a0a 0%, #3a3a3a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
 }
 
 .subtitle {
-  margin: 0.75rem 0 0;
-  font-size: 1rem;
-  color: #64748b;
-  font-weight: 500;
+  margin: 1rem 0 0;
+  font-size: 1.0625rem;
+  color: #666666;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
 }
 
 .back-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
-  color: #475569;
+  gap: 0.625rem;
+  padding: 0.875rem 1.625rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #1d1d1f;
   text-decoration: none;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 
 .back-link:hover {
-  transform: translateX(-4px);
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border-color: #cbd5e1;
+  transform: translateX(-6px) translateY(-2px);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 .back-link .icon {
@@ -478,17 +488,20 @@ onMounted(() => {
   transform: translateX(-2px);
 }
 
-/* 消息提示 */
+/* 消息提示 - Apple级动画 */
 .message {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 14px;
-  margin-bottom: 1.5rem;
-  font-size: 0.95rem;
+  gap: 0.875rem;
+  padding: 1.125rem 1.625rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  font-size: 0.9375rem;
   font-weight: 500;
-  animation: slideIn 0.3s ease;
+  letter-spacing: -0.01em;
+  animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 @keyframes slideIn {
@@ -513,9 +526,10 @@ onMounted(() => {
 }
 
 .message.success {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  color: #065f46;
-  border: 1px solid #6ee7b7;
+  background: linear-gradient(135deg, rgba(209, 250, 229, 0.9), rgba(167, 243, 208, 0.9));
+  color: #047857;
+  border: 0.5px solid rgba(110, 231, 183, 0.5);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
 }
 
 .message.success .message-icon {
@@ -524,9 +538,10 @@ onMounted(() => {
 }
 
 .message.error {
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  background: linear-gradient(135deg, rgba(254, 226, 226, 0.9), rgba(254, 202, 202, 0.9));
+  color: #b91c1c;
+  border: 0.5px solid rgba(252, 165, 165, 0.5);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.1);
 }
 
 .message.error .message-icon {
@@ -558,25 +573,23 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* 主布局 */
+/* 主布局 - PC端上下布局 */
 .layout {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 1.5rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-/* 表单区域 */
+/* 表单区域 - Apple毛玻璃效果 */
 .job-form {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 1.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid #e2e8f0;
-  position: sticky;
-  top: 1.5rem;
-  max-height: calc(100vh - 3rem);
-  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
 
 .job-form::-webkit-scrollbar {
@@ -601,37 +614,41 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .form-header h2 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #1d1d1f;
+  letter-spacing: -0.03em;
 }
 
 .btn-new {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  padding: 0.75rem 1.375rem;
+  background: linear-gradient(135deg, #007aff 0%, #0051d5 100%);
   color: white;
-  border: none;
-  border-radius: 10px;
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 3px 12px rgba(0, 122, 255, 0.3);
+  letter-spacing: -0.01em;
 }
 
 .btn-new:hover {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, #0066cc 0%, #0040a3 100%);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
 }
 
 .btn-new:disabled {
@@ -646,54 +663,58 @@ onMounted(() => {
 
 /* 表单内容 */
 .form-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 2rem;
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #fafbfc, #f8fafc);
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  gap: 1.25rem;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+}
+
+.form-section:first-child {
+  grid-column: 1 / -1;
 }
 
 .section-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: #1d1d1f;
+  text-transform: none;
+  letter-spacing: -0.02em;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .section-title::before {
-  content: '';
-  width: 3px;
-  height: 1rem;
-  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
-  border-radius: 2px;
+  display: none;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .field-label {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #334155;
+  color: #1d1d1f;
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  letter-spacing: -0.01em;
 }
 
 .required {
@@ -704,118 +725,141 @@ onMounted(() => {
 .inline-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.875rem;
+  gap: 1.5rem;
+  align-items: start;
 }
 
 .inline-group-triple {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.875rem;
+  gap: 1.5rem;
+  align-items: start;
 }
 
 input,
 select,
 textarea {
-  padding: 0.875rem 1rem;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  font-size: 0.95rem;
-  font-family: inherit;
-  background: #ffffff;
-  transition: all 0.2s;
+  width: 100%;
+  padding: 0.875rem 1.125rem;
+  border-radius: 11px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.9375rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  letter-spacing: -0.01em;
 }
 
 input:hover,
 select:hover,
 textarea:hover {
-  border-color: #cbd5e1;
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 1);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  border-color: #007aff;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
 }
 
 textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
   line-height: 1.6;
   font-family: inherit;
 }
 
 /* 表单操作按钮 */
 .form-actions {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  justify-content: flex-end;
 }
 
 .btn-submit,
 .btn-reset {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: 0.625rem;
+  padding: 1rem 2.5rem;
   border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.95rem;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.01em;
+  min-width: 140px;
 }
 
 .btn-submit {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, #007aff 0%, #0051d5 100%);
   color: white;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
 }
 
 .btn-submit:hover {
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #0066cc 0%, #0040a3 100%);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-submit:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-reset {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1d1d1f;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .btn-reset:hover {
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  border-color: #cbd5e1;
+  background: rgba(248, 248, 248, 1);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .btn-reset:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-icon {
   font-size: 1rem;
 }
 
-/* 岗位列表区域 */
+/* 岗位列表区域 - Apple卡片 */
 .job-list-section {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(226, 232, 240, 0.6);
+  padding: 2.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 .job-list-section::before {
@@ -833,9 +877,9 @@ textarea {
 }
 
 .section-header {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
 }
 
 .header-content {
@@ -846,35 +890,43 @@ textarea {
 
 .header-content h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
 }
 
 .count {
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  padding: 0.5rem 1.125rem;
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(253, 230, 138, 0.8));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #92400e;
-  border-radius: 999px;
-  font-size: 0.85rem;
+  border-radius: 20px;
+  font-size: 0.8125rem;
   font-weight: 600;
+  border: 0.5px solid rgba(146, 64, 14, 0.1);
+  letter-spacing: -0.01em;
 }
 
-/* 空状态 */
+/* 空状态 - Apple风格 */
 .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 3rem 1rem;
-  color: #94a3b8;
-  font-size: 1rem;
+  gap: 1.25rem;
+  padding: 4rem 2rem;
+  color: #86868b;
+  font-size: 1.0625rem;
+  font-weight: 500;
   text-align: center;
+  letter-spacing: -0.01em;
 }
 
 .empty-icon,
 .loading-spinner {
-  font-size: 3rem;
+  font-size: 4rem;
+  filter: grayscale(0.3) opacity(0.8);
 }
 
 @keyframes spin {
@@ -885,14 +937,24 @@ textarea {
   animation: spin 2s linear infinite;
 }
 
-/* 岗位卡片列表 */
+/* 岗位卡片列表 - PC端网格布局 */
 .job-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-height: calc(100vh - 320px);
-  overflow-y: auto;
-  padding-right: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 1.5rem;
+  max-height: none;
+}
+
+@media (max-width: 1400px) {
+  .job-list {
+    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .job-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .job-list::-webkit-scrollbar {
@@ -915,14 +977,20 @@ textarea {
 
 /* 岗位卡片 */
 .job-card {
-  padding: 1.25rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  background: #ffffff;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 1.75rem;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .job-card::before {
@@ -932,15 +1000,17 @@ textarea {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #f59e0b, #fb923c);
+  background: linear-gradient(180deg, #007aff 0%, #0051d5 100%);
   transform: scaleY(0);
-  transition: transform 0.3s;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(0, 122, 255, 0.4);
 }
 
 .job-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
-  border-color: #cbd5e1;
+  border-color: rgba(0, 122, 255, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 122, 255, 0.1);
+  transform: translateY(-6px) scale(1.005);
+  background: rgba(255, 255, 255, 1);
 }
 
 .job-card:hover::before {
@@ -1192,14 +1262,17 @@ textarea {
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
-  .layout {
+  .form-content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
   
-  .job-form {
-    position: static;
-    max-height: none;
+  .form-section:first-child {
+    grid-column: 1;
+  }
+  
+  .form-actions {
+    grid-column: 1;
   }
 }
 
@@ -1225,15 +1298,30 @@ textarea {
   .inline-group,
   .inline-group-triple {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
   }
 
   .meta-grid {
     grid-template-columns: 1fr;
   }
   
-  .card-actions,
-  .form-actions {
+  .card-actions {
     flex-direction: column;
+  }
+  
+  .btn-submit,
+  .btn-reset {
+    width: 100%;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
   }
   
   .job-list {

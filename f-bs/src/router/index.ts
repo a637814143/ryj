@@ -21,6 +21,11 @@ import EmployerApplicationsView from '../views/employer/EmployerApplicationsView
 import EmployerInterviewsView from '../views/employer/EmployerInterviewsView.vue'
 import EmployerTalentView from '../views/employer/EmployerTalentView.vue'
 
+// 教师专区页面
+import TeacherDashboardView from '../views/teacher/TeacherDashboardView.vue'
+import TeacherGuidanceView from '../views/teacher/TeacherGuidanceView.vue'
+import TeacherStatisticsView from '../views/teacher/TeacherStatisticsView.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -131,6 +136,25 @@ const router = createRouter({
       name: 'employer-talent',
       component: EmployerTalentView,
       meta: { requiresAuth: true, role: 'EMPLOYER' },
+    },
+    // 教师专区路由 - 需要登录且用户角色为教师
+    {
+      path: '/teacher/overview',
+      name: 'teacher-overview',
+      component: TeacherDashboardView,
+      meta: { requiresAuth: true, role: 'TEACHER' },
+    },
+    {
+      path: '/teacher/guidance',
+      name: 'teacher-guidance',
+      component: TeacherGuidanceView,
+      meta: { requiresAuth: true, role: 'TEACHER' },
+    },
+    {
+      path: '/teacher/statistics',
+      name: 'teacher-statistics',
+      component: TeacherStatisticsView,
+      meta: { requiresAuth: true, role: 'TEACHER' },
     },
   ],
 })

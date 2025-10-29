@@ -12,6 +12,7 @@ const targetRoute = ref('')
 const currentRole = computed(() => currentUser.value?.role ?? null)
 const isStudentRole = computed(() => currentRole.value === 'STUDENT')
 const isEmployerRole = computed(() => currentRole.value === 'EMPLOYER')
+const isTeacherRole = computed(() => currentRole.value === 'TEACHER')
 
 // 检查登录状态
 const checkLoginStatus = () => {
@@ -111,12 +112,12 @@ const goToLogin = () => {
 
 // 检查导航是否需要登录
 const handleNavClick = (event: Event, path: string) => {
-  // 如果已登录，直接放行
+  // 如果已登录，直接放行，让路由守卫处理角色验证
   if (isLoggedIn.value) {
     return
   }
 
-  // 检查目标路径是否需要登录
+  // 未登录时，检查目标路径是否需要登录
   const needsAuth = path.startsWith('/student/') || 
                     path.startsWith('/employer/') || 
                     path.startsWith('/teacher/') ||
@@ -131,11 +132,14 @@ const handleNavClick = (event: Event, path: string) => {
 
 // 暴露给全局使用
 ;(window as any).checkAuthAndNavigate = (path: string) => {
-  if (!isLoggedIn.value) {
-    openLoginDialog(path)
-    return false
+  // 如果已登录，直接返回 true，让路由守卫处理角色检查
+  if (isLoggedIn.value) {
+    return true
   }
-  return true
+  
+  // 未登录才显示登录对话框
+  openLoginDialog(path)
+  return false
 }
 
 onMounted(() => {
@@ -193,6 +197,15 @@ onUnmounted(() => {
             <RouterLink to="/employer/applications" @click="(e) => handleNavClick(e, '/employer/applications')">应聘管理</RouterLink>
             <RouterLink to="/employer/interviews" @click="(e) => handleNavClick(e, '/employer/interviews')">面试安排</RouterLink>
             <RouterLink to="/employer/talent" @click="(e) => handleNavClick(e, '/employer/talent')">人才库</RouterLink>
+          </div>
+        </div>
+        
+        <div class="nav-dropdown" v-if="isTeacherRole">
+          <span class="nav-link">教师专区 ▾</span>
+          <div class="dropdown-menu">
+            <RouterLink to="/teacher/overview" @click="(e) => handleNavClick(e, '/teacher/overview')">教师仪表板</RouterLink>
+            <RouterLink to="/teacher/guidance" @click="(e) => handleNavClick(e, '/teacher/guidance')">指导记录</RouterLink>
+            <RouterLink to="/teacher/statistics" @click="(e) => handleNavClick(e, '/teacher/statistics')">统计分析</RouterLink>
           </div>
         </div>
         

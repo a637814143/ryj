@@ -1,11 +1,388 @@
 package com.ryj.demo.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ryj.demo.entity.Teacher;
+import com.ryj.demo.dto.TeacherDashboardResponse;
+import com.ryj.demo.entity.*;
 import com.ryj.demo.mapper.TeacherMapper;
-import com.ryj.demo.service.TeacherService;
+import com.ryj.demo.service.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> implements TeacherService {
+
+    private final SysUserService sysUserService;
+    private final StudentProfileService studentProfileService;
+    private final StudentProfileUpdateRequestService profileUpdateRequestService;
+    private final TeacherGuidanceService guidanceService;
+    private final JobApplicationService jobApplicationService;
+    private final InterviewService interviewService;
+    private final EmployerService employerService;
+    private final JobPostingService jobPostingService;
+
+    public TeacherServiceImpl(
+            SysUserService sysUserService,
+            StudentProfileService studentProfileService,
+            @Lazy StudentProfileUpdateRequestService profileUpdateRequestService,
+            TeacherGuidanceService guidanceService,
+            JobApplicationService jobApplicationService,
+            InterviewService interviewService,
+            EmployerService employerService,
+            JobPostingService jobPostingService) {
+        this.sysUserService = sysUserService;
+        this.studentProfileService = studentProfileService;
+        this.profileUpdateRequestService = profileUpdateRequestService;
+        this.guidanceService = guidanceService;
+        this.jobApplicationService = jobApplicationService;
+        this.interviewService = interviewService;
+        this.employerService = employerService;
+        this.jobPostingService = jobPostingService;
+    }
+
+    @Override
+    public Teacher getByUserId(Long userId) {
+        return this.getOne(new LambdaQueryWrapper<Teacher>().eq(Teacher::getUserId, userId));
+    }
+
+    @Override
+    public TeacherDashboardResponse getDashboardData(Long teacherId) {
+        TeacherDashboardResponse response = new TeacherDashboardResponse();
+        
+        // 1. 获取教师基本信息
+        Teacher teacher = this.getById(teacherId);
+        if (teacher == null) {
+            throw new RuntimeException("教师信息不存在");
+        }
+        
+        SysUser teacherUser = sysUserService.getById(teacher.getUserId());
+        
+        // 构建教师档案信息
+        TeacherDashboardResponse.TeacherProfile profile = new TeacherDashboardResponse.TeacherProfile();
+        profile.setTeacherId(teacher.getId());
+        profile.setUserId(teacher.getUserId());
+        profile.setName(teacherUser != null ? teacherUser.getFullName() : "未知");
+        profile.setDepartment(teacher.getDepartment());
+        profile.setEmail(teacher.getEmail());
+        profile.setPhone(teacher.getPhone());
+        profile.setBiography("就业指导教师，致力于帮助学生实现职业发展目标");
+        profile.setFocus("就业指导 | 职业规划");
+        profile.setAvatarInitials(teacherUser != null && teacherUser.getFullName() != null && !teacherUser.getFullName().isEmpty() 
+            ? teacherUser.getFullName().substring(0, 1) : "T");
+        response.setProfile(profile);
+
+        // 2. 获取所有被指导的学生
+        List<TeacherGuidance> allGuidances = guidanceService.list(
+            new LambdaQueryWrapper<TeacherGuidance>().eq(TeacherGuidance::getTeacherId, teacherId)
+        );
+        
+        Set<Long> guidedStudentIds = allGuidances.stream()
+            .map(TeacherGuidance::getStudentId)
+            .collect(Collectors.toSet());
+
+        // 3. 获取待审核的档案更新请求
+        List<StudentProfileUpdateRequest> pendingRequests = profileUpdateRequestService.list(
+            new LambdaQueryWrapper<StudentProfileUpdateRequest>()
+                .eq(StudentProfileUpdateRequest::getStatus, "PENDING")
+                .in(!guidedStudentIds.isEmpty(), StudentProfileUpdateRequest::getStudentId, guidedStudentIds)
+        );
+
+        List<TeacherDashboardResponse.PendingApproval> pendingApprovals = new ArrayList<>();
+        for (StudentProfileUpdateRequest request : pendingRequests) {
+            SysUser student = sysUserService.getById(request.getStudentId());
+            TeacherDashboardResponse.PendingApproval approval = new TeacherDashboardResponse.PendingApproval();
+            approval.setRequestId(request.getId());
+            approval.setStudentId(request.getStudentId());
+            approval.setStudentName(student != null ? student.getFullName() : "未知学生");
+            approval.setMajor(request.getMajor());
+            approval.setGraduationYear(request.getGraduationYear());
+            approval.setSubmittedAt(request.getCreatedAt());
+            approval.setBiography(request.getBiography());
+            pendingApprovals.add(approval);
+        }
+        response.setPendingApprovals(pendingApprovals);
+
+        // 4. 获取所有被指导学生的详细信息
+        List<TeacherDashboardResponse.GuidedStudent> guidedStudents = new ArrayList<>();
+        for (Long studentId : guidedStudentIds) {
+            SysUser student = sysUserService.getById(studentId);
+            StudentProfile profile1 = studentProfileService.getById(studentId);
+            
+            // 获取该学生的待审核请求数
+            long pendingCount = profileUpdateRequestService.count(
+                new LambdaQueryWrapper<StudentProfileUpdateRequest>()
+                    .eq(StudentProfileUpdateRequest::getStudentId, studentId)
+                    .eq(StudentProfileUpdateRequest::getStatus, "PENDING")
+            );
+            
+            // 获取该学生的活跃申请数
+            long activeAppCount = jobApplicationService.count(
+                new LambdaQueryWrapper<JobApplication>()
+                    .eq(JobApplication::getStudentId, studentId)
+                    .in(JobApplication::getStatus, Arrays.asList(
+                        JobApplication.Status.SUBMITTED,
+                        JobApplication.Status.REVIEWING,
+                        JobApplication.Status.INTERVIEW
+                    ))
+            );
+            
+            // 获取最新面试状态
+            JobApplication latestApp = jobApplicationService.getOne(
+                new LambdaQueryWrapper<JobApplication>()
+                    .eq(JobApplication::getStudentId, studentId)
+                    .orderByDesc(JobApplication::getAppliedAt)
+                    .last("LIMIT 1")
+            );
+            
+            Interview latestInterview = null;
+            if (latestApp != null) {
+                latestInterview = interviewService.getOne(
+                    new LambdaQueryWrapper<Interview>()
+                        .eq(Interview::getApplicationId, latestApp.getId())
+                        .orderByDesc(Interview::getScheduledTime)
+                        .last("LIMIT 1")
+                );
+            }
+            
+            // 获取最近指导记录
+            TeacherGuidance latestGuidance = guidanceService.getOne(
+                new LambdaQueryWrapper<TeacherGuidance>()
+                    .eq(TeacherGuidance::getTeacherId, teacherId)
+                    .eq(TeacherGuidance::getStudentId, studentId)
+                    .orderByDesc(TeacherGuidance::getCreatedAt)
+                    .last("LIMIT 1")
+            );
+            
+            // 获取该学生申请的企业名称
+            List<JobApplication> apps = jobApplicationService.list(
+                new LambdaQueryWrapper<JobApplication>()
+                    .eq(JobApplication::getStudentId, studentId)
+                    .orderByDesc(JobApplication::getAppliedAt)
+                    .last("LIMIT 5")
+            );
+            
+            List<String> employerNames = new ArrayList<>();
+            for (JobApplication app : apps) {
+                if (app.getJobId() != null) {
+                    JobPosting job = jobPostingService.getById(app.getJobId());
+                    if (job != null && job.getEmployerId() != null) {
+                        Employer employer = employerService.getById(job.getEmployerId());
+                        if (employer != null && !employerNames.contains(employer.getCompanyName())) {
+                            employerNames.add(employer.getCompanyName());
+                        }
+                    }
+                }
+            }
+            
+            TeacherDashboardResponse.GuidedStudent guidedStudent = new TeacherDashboardResponse.GuidedStudent();
+            guidedStudent.setStudentId(studentId);
+            guidedStudent.setStudentName(student != null ? student.getFullName() : "未知");
+            guidedStudent.setMajor(profile1 != null ? profile1.getMajor() : null);
+            guidedStudent.setPendingRequestCount((int) pendingCount);
+            guidedStudent.setActiveApplicationCount((int) activeAppCount);
+            guidedStudent.setLatestInterviewStatus(latestInterview != null ? latestInterview.getStatus().toString() : null);
+            guidedStudent.setLatestGuidanceAt(latestGuidance != null ? latestGuidance.getCreatedAt() : null);
+            guidedStudent.setLatestGuidanceNote(latestGuidance != null ? latestGuidance.getNote() : null);
+            guidedStudent.setEmployerNames(employerNames);
+            
+            guidedStudents.add(guidedStudent);
+        }
+        response.setGuidedStudents(guidedStudents);
+
+        // 5. 获取校企协同信息
+        Map<Long, TeacherDashboardResponse.EmployerCollaboration> employerMap = new HashMap<>();
+        for (Long studentId : guidedStudentIds) {
+            List<JobApplication> apps = jobApplicationService.list(
+                new LambdaQueryWrapper<JobApplication>().eq(JobApplication::getStudentId, studentId)
+            );
+            
+            for (JobApplication app : apps) {
+                if (app.getJobId() == null) continue;
+                JobPosting job = jobPostingService.getById(app.getJobId());
+                if (job == null || job.getEmployerId() == null) continue;
+                
+                Employer employer = employerService.getById(job.getEmployerId());
+                if (employer == null) continue;
+                
+                TeacherDashboardResponse.EmployerCollaboration collab = employerMap.computeIfAbsent(
+                    employer.getId(),
+                    id -> {
+                        TeacherDashboardResponse.EmployerCollaboration c = new TeacherDashboardResponse.EmployerCollaboration();
+                        c.setEmployerId(id);
+                        c.setCompanyName(employer.getCompanyName());
+                        c.setJobCount(0);
+                        c.setStudentCount(0);
+                        c.setStudentNames(new ArrayList<>());
+                        return c;
+                    }
+                );
+                
+                SysUser student = sysUserService.getById(studentId);
+                String studentName = student != null ? student.getFullName() : "未知";
+                if (!collab.getStudentNames().contains(studentName)) {
+                    collab.getStudentNames().add(studentName);
+                    collab.setStudentCount(collab.getStudentCount() + 1);
+                }
+                
+                if (collab.getLatestInteraction() == null || 
+                    app.getAppliedAt().isAfter(collab.getLatestInteraction())) {
+                    collab.setLatestInteraction(app.getAppliedAt());
+                }
+            }
+        }
+        
+        // 计算每个企业的职位数
+        for (TeacherDashboardResponse.EmployerCollaboration collab : employerMap.values()) {
+            long jobCount = jobPostingService.count(
+                new LambdaQueryWrapper<JobPosting>().eq(JobPosting::getEmployerId, collab.getEmployerId())
+            );
+            collab.setJobCount((int) jobCount);
+        }
+        
+        response.setEmployerCollaborations(new ArrayList<>(employerMap.values()));
+
+        // 6. 获取最近指导记录
+        List<TeacherGuidance> recentGuidances = guidanceService.list(
+            new LambdaQueryWrapper<TeacherGuidance>()
+                .eq(TeacherGuidance::getTeacherId, teacherId)
+                .orderByDesc(TeacherGuidance::getCreatedAt)
+                .last("LIMIT 10")
+        );
+        
+        List<TeacherDashboardResponse.GuidanceNote> guidanceNotes = new ArrayList<>();
+        for (TeacherGuidance guidance : recentGuidances) {
+            SysUser student = sysUserService.getById(guidance.getStudentId());
+            TeacherDashboardResponse.GuidanceNote note = new TeacherDashboardResponse.GuidanceNote();
+            note.setId(guidance.getId());
+            note.setStudentId(guidance.getStudentId());
+            note.setStudentName(student != null ? student.getFullName() : "未知");
+            note.setNote(guidance.getNote());
+            note.setCreatedAt(guidance.getCreatedAt());
+            guidanceNotes.add(note);
+        }
+        response.setRecentGuidanceNotes(guidanceNotes);
+
+        // 7. 获取学生就业动向
+        List<TeacherDashboardResponse.StudentActivity> activities = new ArrayList<>();
+        for (Long studentId : guidedStudentIds) {
+            List<JobApplication> apps = jobApplicationService.list(
+                new LambdaQueryWrapper<JobApplication>()
+                    .eq(JobApplication::getStudentId, studentId)
+                    .orderByDesc(JobApplication::getAppliedAt)
+                    .last("LIMIT 3")
+            );
+            
+            for (JobApplication app : apps) {
+                SysUser student = sysUserService.getById(studentId);
+                JobPosting job = app.getJobId() != null ? jobPostingService.getById(app.getJobId()) : null;
+                Employer employer = (job != null && job.getEmployerId() != null) 
+                    ? employerService.getById(job.getEmployerId()) : null;
+                
+                TeacherDashboardResponse.StudentActivity activity = new TeacherDashboardResponse.StudentActivity();
+                activity.setApplicationId(app.getId());
+                activity.setStudentId(studentId);
+                activity.setStudentName(student != null ? student.getFullName() : "未知");
+                activity.setJobId(app.getJobId());
+                activity.setJobTitle(job != null ? job.getTitle() : null);
+                activity.setEmployerName(employer != null ? employer.getCompanyName() : null);
+                activity.setStatus(app.getStatus());
+                activity.setAppliedAt(app.getAppliedAt());
+                activities.add(activity);
+            }
+        }
+        
+        activities.sort((a, b) -> b.getAppliedAt().compareTo(a.getAppliedAt()));
+        if (activities.size() > 15) {
+            activities = activities.subList(0, 15);
+        }
+        response.setRecentStudentActivities(activities);
+
+        // 8. 构建概览数据
+        TeacherDashboardResponse.Overview overview = new TeacherDashboardResponse.Overview();
+        overview.setTotalGuidedStudents(guidedStudentIds.size());
+        overview.setPendingApprovalCount(pendingApprovals.size());
+        
+        // 统计活跃面试数
+        int activeInterviewCount = 0;
+        for (Long studentId : guidedStudentIds) {
+            long count = interviewService.count(
+                new LambdaQueryWrapper<Interview>()
+                    .eq(Interview::getStatus, Interview.Status.SCHEDULED)
+                    .in(Interview::getApplicationId, 
+                        jobApplicationService.list(
+                            new LambdaQueryWrapper<JobApplication>()
+                                .eq(JobApplication::getStudentId, studentId)
+                        ).stream().map(JobApplication::getId).collect(Collectors.toList())
+                    )
+            );
+            activeInterviewCount += count;
+        }
+        overview.setActiveInterviewCount(activeInterviewCount);
+        overview.setCollaborationCount(employerMap.size());
+        response.setOverview(overview);
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public Boolean approveProfileUpdate(Long teacherId, Long requestId, String reviewComment) {
+        StudentProfileUpdateRequest request = profileUpdateRequestService.getById(requestId);
+        if (request == null) {
+            throw new RuntimeException("申请记录不存在");
+        }
+        
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new RuntimeException("该申请已被处理");
+        }
+        
+        // 更新学生档案
+        StudentProfile profile = studentProfileService.getById(request.getStudentId());
+        if (profile == null) {
+            profile = new StudentProfile();
+            profile.setId(request.getStudentId());
+        }
+        
+        if (request.getGender() != null) profile.setGender(request.getGender());
+        if (request.getAge() != null) profile.setAge(request.getAge());
+        if (request.getMajor() != null) profile.setMajor(request.getMajor());
+        if (request.getBiography() != null) profile.setBiography(request.getBiography());
+        if (request.getGraduationYear() != null) profile.setGraduationYear(request.getGraduationYear());
+        
+        studentProfileService.saveOrUpdate(profile);
+        
+        // 更新申请状态
+        request.setStatus("APPROVED");
+        request.setReviewedAt(LocalDateTime.now());
+        request.setReviewerId(teacherId);
+        request.setReviewComment(reviewComment);
+        
+        return profileUpdateRequestService.updateById(request);
+    }
+
+    @Override
+    @Transactional
+    public Boolean rejectProfileUpdate(Long teacherId, Long requestId, String reviewComment) {
+        StudentProfileUpdateRequest request = profileUpdateRequestService.getById(requestId);
+        if (request == null) {
+            throw new RuntimeException("申请记录不存在");
+        }
+        
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new RuntimeException("该申请已被处理");
+        }
+        
+        request.setStatus("REJECTED");
+        request.setReviewedAt(LocalDateTime.now());
+        request.setReviewerId(teacherId);
+        request.setReviewComment(reviewComment != null ? reviewComment : "需要进一步完善");
+        
+        return profileUpdateRequestService.updateById(request);
+    }
 }

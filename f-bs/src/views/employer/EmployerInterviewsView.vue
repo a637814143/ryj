@@ -77,18 +77,27 @@ const fillForm = (interview: EmployerInterviewOverview) => {
 }
 
 const loadInterviews = async () => {
-  if (!userId.value) return
+  if (!userId.value) {
+    console.warn('无法加载面试列表：userId 未设置')
+    return
+  }
+  
   loading.value = true
   resetMessage()
+  
   try {
-    interviews.value = await fetchEmployerInterviews(userId.value)
+    console.log('开始加载面试列表，userId:', userId.value)
+    const result = await fetchEmployerInterviews(userId.value)
+    interviews.value = result
+    console.log('成功加载', result.length, '场面试:', result)
+    
     if (!interviews.value.length) {
       message.value = '暂无面试安排，可以通过右侧表单新建'
       messageType.value = 'error'
     }
   } catch (err) {
-    console.error(err)
-    message.value = (err as Error).message || '加载面试安排失败'
+    console.error('加载面试列表失败:', err)
+    message.value = (err as Error).message || '加载面试安排失败，请检查网络连接'
     messageType.value = 'error'
   } finally {
     loading.value = false
@@ -96,13 +105,27 @@ const loadInterviews = async () => {
 }
 
 const toPayload = (): EmployerInterviewRequestPayload => {
+  // 验证必填字段
+  if (!form.jobId || isNaN(Number(form.jobId))) {
+    throw new Error('请输入有效的岗位ID')
+  }
+  if (!form.applicationId || isNaN(Number(form.applicationId))) {
+    throw new Error('请输入有效的申请ID')
+  }
   if (!form.scheduledTime) {
     throw new Error('请选择面试时间')
   }
+  
+  // 验证面试时间不能是过去
+  const scheduledDate = new Date(form.scheduledTime)
+  if (isNaN(scheduledDate.getTime())) {
+    throw new Error('面试时间格式无效')
+  }
+  
   return {
     jobId: Number(form.jobId),
     applicationId: Number(form.applicationId),
-    scheduledTime: new Date(form.scheduledTime).toISOString(),
+    scheduledTime: scheduledDate.toISOString(),
     location: form.location.trim() || null,
     meetingLink: form.meetingLink.trim() || null,
     status: form.status,
@@ -116,28 +139,65 @@ const submit = async () => {
     messageType.value = 'error'
     return
   }
-  if (!form.jobId || !form.applicationId) {
-    message.value = '请填写岗位ID和申请ID'
-    messageType.value = 'error'
-    return
-  }
+  
+  saving.value = true
+  resetMessage()
+  
   try {
+    // toPayload 会进行表单验证
     const payload = toPayload()
-    saving.value = true
-    resetMessage()
+    console.log('📤 提交面试数据:', payload)
+    
+    let resultInterview: EmployerInterviewOverview
+    
     if (editingId.value) {
-      await updateEmployerInterview(userId.value, editingId.value, payload)
-      message.value = '面试安排已更新'
+      resultInterview = await updateEmployerInterview(userId.value, editingId.value, payload)
+      console.log('✅ 面试更新成功:', resultInterview)
+      
+      // 更新列表中的面试数据
+      const index = interviews.value.findIndex(i => i.id === editingId.value)
+      if (index !== -1) {
+        interviews.value[index] = resultInterview
+        console.log('📝 已更新列表中的面试数据')
+      }
+      
+      message.value = '✓ 面试安排已更新'
     } else {
-      await createEmployerInterview(userId.value, payload)
-      message.value = '面试安排已创建'
+      resultInterview = await createEmployerInterview(userId.value, payload)
+      console.log('✅ 面试创建成功:', resultInterview)
+      
+      // 立即将新面试添加到列表中
+      interviews.value.unshift(resultInterview)
+      console.log('➕ 已将新面试添加到列表，当前共', interviews.value.length, '场面试')
+      
+      message.value = '✓ 面试安排已创建成功'
     }
+    
     messageType.value = 'success'
     resetForm()
-    await loadInterviews()
+    
+    // 延迟刷新以确保后端数据同步
+    setTimeout(async () => {
+      console.log('🔄 后台刷新面试列表...')
+      try {
+        const freshList = await fetchEmployerInterviews(userId.value!)
+        interviews.value = freshList
+        console.log('✅ 列表已同步，共', freshList.length, '场面试')
+      } catch (err) {
+        console.warn('后台刷新失败，使用当前列表:', err)
+      }
+    }, 500)
+    
+    // 3秒后自动清除成功消息
+    setTimeout(() => {
+      if (messageType.value === 'success') {
+        resetMessage()
+      }
+    }, 3000)
+    
   } catch (err) {
-    console.error(err)
-    message.value = (err as Error).message || '保存面试安排失败'
+    console.error('❌ 保存面试失败:', err)
+    message.value = (err as Error).message || '保存面试安排失败，请检查网络连接和输入信息'
     messageType.value = 'error'
   } finally {
     saving.value = false

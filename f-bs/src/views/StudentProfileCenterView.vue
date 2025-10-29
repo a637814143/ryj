@@ -1,4 +1,4 @@
-<script setup lang="ts">
+xz<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -177,6 +177,26 @@ watch(
 
 onMounted(() => {
   if (!route.query.studentId) {
+    // 首先尝试从登录信息中获取学生ID
+    const userInfoStr = localStorage.getItem('userInfo')
+    if (userInfoStr) {
+      try {
+        const userInfo = JSON.parse(userInfoStr)
+        if (userInfo && userInfo.role === 'STUDENT' && userInfo.id) {
+          const id = userInfo.id
+          studentId.value = id
+          studentIdInput.value = String(id)
+          localStorage.setItem('currentStudentId', String(id))
+          loadProfile(id)
+          router.replace({ name: 'student-profile', query: { studentId: String(id) } })
+          return
+        }
+      } catch (e) {
+        console.error('Failed to parse userInfo:', e)
+      }
+    }
+    
+    // 如果不是学生登录，再尝试从缓存中获取
     const stored = parseStudentId(localStorage.getItem('currentStudentId'))
     if (stored) {
       studentId.value = stored

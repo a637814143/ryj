@@ -49,6 +49,20 @@ const studentIdInput = ref('')
 const studentIdError = ref('')
 let requestToken = 0
 
+// 检查当前登录用户是否是学生角色
+const isStudentUser = computed(() => {
+  const userInfoStr = localStorage.getItem('userInfo')
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr)
+      return userInfo && userInfo.role === 'STUDENT'
+    } catch (e) {
+      return false
+    }
+  }
+  return false
+})
+
 const modules = computed<StudentModuleInfo[]>(() => dashboard.value?.modules ?? [])
 const header = computed(() => dashboard.value?.header)
 
@@ -235,6 +249,27 @@ watch(
 
 onMounted(() => {
   if (!studentId.value) {
+    // 首先尝试从登录信息中获取学生ID
+    const userInfoStr = localStorage.getItem('userInfo')
+    if (userInfoStr) {
+      try {
+        const userInfo = JSON.parse(userInfoStr)
+        if (userInfo && userInfo.role === 'STUDENT' && userInfo.id) {
+          studentId.value = userInfo.id
+          studentIdInput.value = String(userInfo.id)
+          localStorage.setItem('currentStudentId', String(userInfo.id))
+          const query = { ...route.query } as Record<string, any>
+          query.studentId = String(userInfo.id)
+          const params = props.section ? { section: props.section } : {}
+          router.replace({ name: 'student-dashboard', params, query }).catch(() => {})
+          return
+        }
+      } catch (e) {
+        console.error('Failed to parse userInfo:', e)
+      }
+    }
+    
+    // 如果不是学生登录，再尝试从缓存中获取（用于教师/管理员查看）
     const stored = localStorage.getItem('currentStudentId')
     const parsed = parseStudentIdValue(stored)
     if (parsed) {
@@ -858,11 +893,13 @@ const applyForJob = async (jobId: number) => {
             type="number"
             min="1"
             placeholder="请输入学生 ID"
+            :disabled="isStudentUser"
             @keyup.enter="applyStudentId"
           />
-          <button type="button" @click="applyStudentId">载入数据</button>
+          <button type="button" @click="applyStudentId" :disabled="isStudentUser">载入数据</button>
         </div>
         <p v-if="studentIdError" class="feedback feedback--error">{{ studentIdError }}</p>
+        <p v-if="isStudentUser" class="feedback">您已自动登录为学生角色</p>
       </div>
     </section>
 

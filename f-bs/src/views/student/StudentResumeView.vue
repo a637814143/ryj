@@ -425,8 +425,24 @@ watch(
 
 onMounted(async () => {
   const queryId = typeof route.query.studentId === 'string' ? parseStudentId(route.query.studentId) : null
+  
+  // 尝试从登录信息中获取学生ID
+  let userStudentId: number | null = null
+  const userInfoStr = localStorage.getItem('userInfo')
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr)
+      if (userInfo && userInfo.role === 'STUDENT' && userInfo.id) {
+        userStudentId = userInfo.id
+        localStorage.setItem('currentStudentId', String(userInfo.id))
+      }
+    } catch (e) {
+      console.error('Failed to parse userInfo:', e)
+    }
+  }
+  
   const cachedId = parseStudentId(localStorage.getItem('currentStudentId') || '')
-  const initialId = queryId ?? cachedId
+  const initialId = queryId ?? userStudentId ?? cachedId
   if (initialId) {
     studentId.value = initialId
     studentIdInput.value = String(initialId)

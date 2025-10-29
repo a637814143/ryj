@@ -5,8 +5,10 @@ import com.ryj.demo.dto.StudentProfileDetailResponse;
 import com.ryj.demo.dto.StudentProfileRequest;
 import com.ryj.demo.entity.StudentProfile;
 import com.ryj.demo.entity.StudentProfileUpdateRequest;
+import com.ryj.demo.entity.SysUser;
 import com.ryj.demo.service.StudentProfileService;
 import com.ryj.demo.service.StudentProfileUpdateRequestService;
+import com.ryj.demo.service.SysUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,7 @@ public class StudentProfileController {
 
     private final StudentProfileService studentProfileService;
     private final StudentProfileUpdateRequestService updateRequestService;
+    private final SysUserService sysUserService;
 
     @GetMapping("/profiles/{studentId}")
     public ApiResponse<StudentProfileDetailResponse> getProfile(@PathVariable Long studentId) {
@@ -46,6 +49,20 @@ public class StudentProfileController {
 
     @PostMapping("/profiles/requests")
     public ApiResponse<StudentProfileUpdateRequest> submitProfileUpdate(@Valid @RequestBody StudentProfileRequest request) {
+        // 验证学生ID是否存在
+        if (request.getId() == null) {
+            return ApiResponse.failure(400, "学生ID不能为空");
+        }
+        
+        // 检查用户是否存在且是学生角色
+        SysUser user = sysUserService.getById(request.getId());
+        if (user == null) {
+            return ApiResponse.failure(404, "学生ID " + request.getId() + " 不存在，请检查您的登录状态或联系管理员");
+        }
+        if (user.getRole() != SysUser.Role.STUDENT) {
+            return ApiResponse.failure(403, "用户 " + request.getId() + " 不是学生角色（当前角色：" + user.getRole() + "），无法提交学生档案");
+        }
+        
         StudentProfileUpdateRequest existingPending = updateRequestService.getOne(
                 new LambdaQueryWrapper<StudentProfileUpdateRequest>()
                         .eq(StudentProfileUpdateRequest::getStudentId, request.getId())

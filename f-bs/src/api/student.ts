@@ -240,14 +240,14 @@ export async function fetchStudentProfileDetail(studentId: number) {
   return request<StudentProfileDetail>(`/api/students/profiles/${studentId}`)
 }
 
-export async function submitStudentProfileRequest(payload: Partial<StudentProfile> & { id: number }) {
+export async function submitStudentProfileRequest(payload: (Partial<StudentProfile> & { id: number }) | (Partial<StudentProfile> & { id: number; reviewerId?: number })) {
   return request<StudentProfileUpdateRequest>('/api/students/profiles/requests', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
-export async function updateStudentProfileRequest(requestId: number, payload: Partial<StudentProfile> & { id: number }) {
+export async function updateStudentProfileRequest(requestId: number, payload: (Partial<StudentProfile> & { id: number }) | (Partial<StudentProfile> & { id: number; reviewerId?: number })) {
   return request<boolean>(`/api/students/profiles/requests/${requestId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),

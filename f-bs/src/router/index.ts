@@ -25,6 +25,8 @@ import EmployerTalentView from '../views/employer/EmployerTalentView.vue'
 import TeacherDashboardView from '../views/teacher/TeacherDashboardView.vue'
 import TeacherGuidanceView from '../views/teacher/TeacherGuidanceView.vue'
 import TeacherStatisticsView from '../views/teacher/TeacherStatisticsView.vue'
+import TeacherApprovalsView from '../views/teacher/TeacherApprovalsView.vue'
+import TeacherProfileView from '../views/teacher/TeacherProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -154,6 +156,18 @@ const router = createRouter({
       path: '/teacher/statistics',
       name: 'teacher-statistics',
       component: TeacherStatisticsView,
+      meta: { requiresAuth: true, role: 'TEACHER' },
+    },
+    {
+      path: '/teacher/approvals',
+      name: 'teacher-approvals',
+      component: TeacherApprovalsView,
+      meta: { requiresAuth: true, role: 'TEACHER' },
+    },
+    {
+      path: '/teacher/profile',
+      name: 'teacher-profile',
+      component: TeacherProfileView,
       meta: { requiresAuth: true, role: 'TEACHER' },
     },
   ],

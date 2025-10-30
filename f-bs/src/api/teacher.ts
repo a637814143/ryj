@@ -44,6 +44,7 @@ export type TeacherProfileInfo = {
   userId: number
   name: string
   department: string | null
+  major?: string | null
   email: string | null
   phone: string | null
   biography: string | null
@@ -133,6 +134,47 @@ export async function approveProfileUpdate(teacherId: number, requestId: number,
 
 export async function rejectProfileUpdate(teacherId: number, requestId: number, payload: ReviewPayload) {
   return request<boolean>(`/api/teachers/${teacherId}/requests/${requestId}/reject`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+// 教师列表检索（按院系/专业筛选班主任候选）
+export type TeacherSearchItem = {
+  id: number
+  userId: number
+  name: string
+  department: string | null
+  major?: string | null
+  email: string | null
+}
+
+export async function searchTeachers(params: { department?: string; major?: string; keyword?: string } = {}) {
+  const searchParams = new URLSearchParams()
+  if (params.department) searchParams.set('department', params.department)
+  if (params.major) searchParams.set('major', params.major)
+  if (params.keyword) searchParams.set('keyword', params.keyword)
+  const qs = searchParams.toString()
+  return request<TeacherSearchItem[]>(`/api/teachers${qs ? `?${qs}` : ''}`)
+}
+
+// 教师个人信息获取/更新
+export type TeacherProfileUpsert = {
+  name?: string
+  department?: string | null
+  major?: string | null
+  email?: string | null
+  phone?: string | null
+  focus?: string | null
+  biography?: string | null
+}
+
+export async function getTeacherProfile(teacherId: number) {
+  return request<TeacherProfileInfo>(`/api/teachers/${teacherId}`)
+}
+
+export async function updateTeacherProfile(teacherId: number, payload: TeacherProfileUpsert) {
+  return request<boolean>(`/api/teachers/${teacherId}` , {
     method: 'PUT',
     body: JSON.stringify(payload),
   })

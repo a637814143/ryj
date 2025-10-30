@@ -191,6 +191,10 @@ onMounted(() => {
             <span class="link-icon">📈</span>
             <span>统计分析</span>
           </router-link>
+          <router-link to="/teacher/profile" class="nav-link" active-class="active">
+            <span class="link-icon">🧑‍🏫</span>
+            <span>教师信息</span>
+          </router-link>
         </div>
       </div>
     </nav>

@@ -206,6 +206,7 @@ onUnmounted(() => {
             <RouterLink to="/teacher/overview" @click="(e) => handleNavClick(e, '/teacher/overview')">教师仪表板</RouterLink>
             <RouterLink to="/teacher/guidance" @click="(e) => handleNavClick(e, '/teacher/guidance')">指导记录</RouterLink>
             <RouterLink to="/teacher/statistics" @click="(e) => handleNavClick(e, '/teacher/statistics')">统计分析</RouterLink>
+            <RouterLink to="/teacher/profile" @click="(e) => handleNavClick(e, '/teacher/profile')">个人信息</RouterLink>
           </div>
         </div>
         

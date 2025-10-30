@@ -1,4 +1,4 @@
-xz<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -11,6 +11,7 @@ import {
   type StudentProfileUpdateRequest,
   type ProfileRequestStatus,
 } from '../api/student'
+import { searchTeachers, type TeacherSearchItem } from '../api/teacher'
 
 const router = useRouter()
 const route = useRoute()
@@ -32,7 +33,11 @@ const profileForm = reactive({
   major: '',
   biography: '',
   graduationYear: null as number | null,
+  homeroomTeacherId: null as number | null,
 })
+
+const homeroomTeachers = ref<TeacherSearchItem[]>([])
+const teacherLoading = ref(false)
 
 const statusLabels: Record<ProfileRequestStatus, string> = {
   PENDING: '待审核',
@@ -78,6 +83,32 @@ const populateFromApproved = () => {
   profileForm.major = source?.major ?? ''
   profileForm.biography = source?.biography ?? ''
   profileForm.graduationYear = source?.graduationYear ?? null
+}
+
+const loadHomeroomTeachers = async () => {
+  if (!profileForm.major || !profileForm.major.trim()) {
+    homeroomTeachers.value = []
+    return
+  }
+  teacherLoading.value = true
+  try {
+    homeroomTeachers.value = await searchTeachers({ major: profileForm.major.trim() })
+  } catch (e) {
+    homeroomTeachers.value = []
+  } finally {
+    teacherLoading.value = false
+  }
+}
+
+// 兼容不同后端字段，格式化老师显示名称
+const formatTeacherName = (t: any) => {
+  return (
+    t?.name || t?.fullName || t?.teacherName || t?.realName || t?.username || t?.userName || `教师#${t?.id ?? ''}`
+  )
+}
+
+const formatTeacherDept = (t: any) => {
+  return t?.department || t?.departmentName || t?.college || '未知学院'
 }
 
 const loadProfile = async (id: number) => {
@@ -127,13 +158,14 @@ const handleSubmit = async () => {
       major: profileForm.major || null,
       biography: profileForm.biography || null,
       graduationYear: profileForm.graduationYear ?? null,
+      reviewerId: profileForm.homeroomTeacherId ?? undefined,
     }
     if (currentPending.value) {
       await updateStudentProfileRequest(currentPending.value.id, payload)
       formMessage.value = '已更新待审核的档案申请'
     } else {
       await submitStudentProfileRequest(payload)
-      formMessage.value = '已提交档案更新申请，请等待管理员审核'
+      formMessage.value = '已提交档案更新申请，等待班主任审核'
     }
     await loadProfile(studentId.value)
   } catch (error) {
@@ -208,6 +240,13 @@ onMounted(() => {
 })
 
 const hasPending = computed(() => pendingStatus.value === 'PENDING')
+// 监听专业变化，动态加载班主任候选
+watch(
+  () => profileForm.major,
+  async () => {
+    await loadHomeroomTeachers()
+  }
+)
 </script>
 
 <template>
@@ -215,7 +254,7 @@ const hasPending = computed(() => pendingStatus.value === 'PENDING')
     <header class="profile-header">
       <div>
         <h1>学生个人档案</h1>
-        <p>档案更新需管理员审核，审核通过后方可生效</p>
+        <p>档案更新需班主任审核，审核通过后方可生效</p>
       </div>
       <div class="student-selector">
         <input v-model="studentIdInput" class="input" placeholder="输入学生ID" />
@@ -297,6 +336,16 @@ const hasPending = computed(() => pendingStatus.value === 'PENDING')
               <label class="form__field">
                 <span>预计毕业年份</span>
                 <input v-model.number="profileForm.graduationYear" class="input" type="number" min="1900" max="2100" placeholder="如：2025" />
+              </label>
+              <label class="form__field">
+                <span>班主任老师（按专业匹配）</span>
+                <select v-model.number="profileForm.homeroomTeacherId" class="input">
+                  <option :value="null">请选择班主任</option>
+                  <option v-for="t in homeroomTeachers" :key="t.id" :value="t.id">
+                    {{ formatTeacherName(t) }}（{{ formatTeacherDept(t) }}）
+                  </option>
+                </select>
+                <small v-if="teacherLoading" style="color:#6b7280;">加载可选班主任...</small>
               </label>
             </div>
             <label class="form__field">

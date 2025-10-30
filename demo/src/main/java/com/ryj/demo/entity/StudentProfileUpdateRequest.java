@@ -36,6 +36,9 @@ public class StudentProfileUpdateRequest {
     private LocalDateTime reviewedAt;
 
     private Long reviewerId;
+    // 新增: 班主任ID (归属老师)
+    @TableField("homeroom_teacher_id")
+    private Long homeroomTeacherId;
 
     @TableField("review_comment")
     private String reviewComment;

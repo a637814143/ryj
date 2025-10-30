@@ -12,4 +12,6 @@ public class StudentProfileRequest {
     private String major;
     private String biography;
     private Integer graduationYear;
+    // 新增: 班主任（审核人）ID
+    private Long reviewerId;
 }

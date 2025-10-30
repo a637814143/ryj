@@ -17,13 +17,17 @@ ON DUPLICATE KEY UPDATE
     updated_at = NOW();
 
 -- 2. 添加教师详细信息
-INSERT INTO teacher (id, user_id, department, email, phone)
+INSERT INTO teacher (id, user_id, department, email, phone, major, focus, biography)
 VALUES
-    (4, 2004, '计算机学院', 'zhang.xiaoling@university.edu.cn', '010-10000024')
+    (4, 2004, '计算机学院', 'zhang.xiaoling@university.edu.cn', '010-10000024',
+     '软件工程', '就业指导 | 职业规划', '就业指导教师，致力于帮助学生实现职业发展目标')
 ON DUPLICATE KEY UPDATE
     department = '计算机学院',
     email = 'zhang.xiaoling@university.edu.cn',
-    phone = '010-10000024';
+    phone = '010-10000024',
+    major = '软件工程',
+    focus = '就业指导 | 职业规划',
+    biography = '就业指导教师，致力于帮助学生实现职业发展目标';
 
 -- 3. 为张晓玲老师分配一些指导学生（可选）
 -- 与韩雪、陈宇建立指导关系

@@ -3,13 +3,16 @@ package com.ryj.demo.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ryj.demo.dto.TeacherDashboardResponse;
+import com.ryj.demo.dto.TeacherProfileApprovalDetail;
+import com.ryj.demo.dto.TeacherProfileResponse;
+import com.ryj.demo.dto.TeacherProfileUpdateRequest;
 import com.ryj.demo.entity.*;
 import com.ryj.demo.mapper.TeacherMapper;
 import com.ryj.demo.service.*;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -48,34 +51,109 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
     @Override
     public Teacher getByUserId(Long userId) {
+        Teacher teacher = this.getOne(new LambdaQueryWrapper<Teacher>().eq(Teacher::getUserId, userId));
+        if (teacher != null) {
+            return teacher;
+        }
+
+        SysUser user = sysUserService.getById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("未找到关联的用户信息");
+        }
+        if (user.getRole() != SysUser.Role.TEACHER) {
+            throw new IllegalArgumentException("当前账号不是教师角色");
+        }
+
+        Teacher newTeacher = new Teacher();
+        newTeacher.setUserId(userId);
+        newTeacher.setEmail(user.getEmail());
+        newTeacher.setPhone(user.getPhone());
+        this.save(newTeacher);
         return this.getOne(new LambdaQueryWrapper<Teacher>().eq(Teacher::getUserId, userId));
+    }
+
+    @Override
+    public TeacherProfileResponse getProfile(Long teacherId) {
+        Teacher teacher = this.getById(teacherId);
+        if (teacher == null) {
+            throw new IllegalArgumentException("教师信息不存在");
+        }
+        SysUser teacherUser = sysUserService.getById(teacher.getUserId());
+        return buildProfileResponse(teacher, teacherUser);
+    }
+
+    @Override
+    public boolean updateProfile(Long teacherId, TeacherProfileUpdateRequest request) {
+        Teacher teacher = this.getById(teacherId);
+        if (teacher == null) {
+            throw new IllegalArgumentException("教师信息不存在");
+        }
+
+        boolean teacherUpdated = false;
+        if (request.getDepartment() != null) {
+            teacher.setDepartment(blankToNull(request.getDepartment()));
+            teacherUpdated = true;
+        }
+        if (request.getMajor() != null) {
+            teacher.setMajor(blankToNull(request.getMajor()));
+            teacherUpdated = true;
+        }
+        if (request.getEmail() != null) {
+            teacher.setEmail(blankToNull(request.getEmail()));
+            teacherUpdated = true;
+        }
+        if (request.getPhone() != null) {
+            teacher.setPhone(blankToNull(request.getPhone()));
+            teacherUpdated = true;
+        }
+        if (request.getFocus() != null) {
+            teacher.setFocus(blankToNull(request.getFocus()));
+            teacherUpdated = true;
+        }
+        if (request.getBiography() != null) {
+            teacher.setBiography(blankToNull(request.getBiography()));
+            teacherUpdated = true;
+        }
+        if (teacherUpdated) {
+            this.updateById(teacher);
+        }
+
+        SysUser teacherUser = sysUserService.getById(teacher.getUserId());
+        if (teacherUser != null) {
+            boolean userUpdated = false;
+            if (request.getName() != null && StringUtils.hasText(request.getName())) {
+                teacherUser.setFullName(request.getName().trim());
+                userUpdated = true;
+            }
+            if (request.getEmail() != null) {
+                teacherUser.setEmail(blankToNull(request.getEmail()));
+                userUpdated = true;
+            }
+            if (request.getPhone() != null) {
+                teacherUser.setPhone(blankToNull(request.getPhone()));
+                userUpdated = true;
+            }
+            if (userUpdated) {
+                sysUserService.updateById(teacherUser);
+            }
+        }
+
+        return true;
     }
 
     @Override
     public TeacherDashboardResponse getDashboardData(Long teacherId) {
         TeacherDashboardResponse response = new TeacherDashboardResponse();
-        
+
         // 1. 获取教师基本信息
         Teacher teacher = this.getById(teacherId);
         if (teacher == null) {
             throw new RuntimeException("教师信息不存在");
         }
-        
+
         SysUser teacherUser = sysUserService.getById(teacher.getUserId());
-        
-        // 构建教师档案信息
-        TeacherDashboardResponse.TeacherProfile profile = new TeacherDashboardResponse.TeacherProfile();
-        profile.setTeacherId(teacher.getId());
-        profile.setUserId(teacher.getUserId());
-        profile.setName(teacherUser != null ? teacherUser.getFullName() : "未知");
-        profile.setDepartment(teacher.getDepartment());
-        profile.setEmail(teacher.getEmail());
-        profile.setPhone(teacher.getPhone());
-        profile.setBiography("就业指导教师，致力于帮助学生实现职业发展目标");
-        profile.setFocus("就业指导 | 职业规划");
-        profile.setAvatarInitials(teacherUser != null && teacherUser.getFullName() != null && !teacherUser.getFullName().isEmpty() 
-            ? teacherUser.getFullName().substring(0, 1) : "T");
-        response.setProfile(profile);
+
+        response.setProfile(toDashboardProfile(buildProfileResponse(teacher, teacherUser)));
 
         // 2. 获取所有被指导的学生
         List<TeacherGuidance> allGuidances = guidanceService.list(
@@ -86,11 +164,11 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             .map(TeacherGuidance::getStudentId)
             .collect(Collectors.toSet());
 
-        // 3. 获取待审核的档案更新请求
+        // 3. 获取待审核的档案更新请求（只看分配给当前老师的）
         List<StudentProfileUpdateRequest> pendingRequests = profileUpdateRequestService.list(
             new LambdaQueryWrapper<StudentProfileUpdateRequest>()
                 .eq(StudentProfileUpdateRequest::getStatus, "PENDING")
-                .in(!guidedStudentIds.isEmpty(), StudentProfileUpdateRequest::getStudentId, guidedStudentIds)
+                .eq(StudentProfileUpdateRequest::getHomeroomTeacherId, teacherId)
         );
 
         List<TeacherDashboardResponse.PendingApproval> pendingApprovals = new ArrayList<>();
@@ -339,31 +417,63 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
         
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("该申请已被处理");
+            throw new RuntimeException("该申请已被处理，当前状态：" + request.getStatus());
         }
         
-        // 更新学生档案
+        // 验证该申请是否分配给当前教师
+        if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().equals(teacherId)) {
+            throw new RuntimeException("该申请未分配给您，无权审核");
+        }
+        
+        Teacher teacher = this.getById(teacherId);
+        if (teacher == null) {
+            throw new RuntimeException("教师信息不存在，无法执行审核");
+        }
+
+        // 1. 更新学生档案信息（通过后立即生效）
         StudentProfile profile = studentProfileService.getById(request.getStudentId());
         if (profile == null) {
             profile = new StudentProfile();
             profile.setId(request.getStudentId());
         }
         
-        if (request.getGender() != null) profile.setGender(request.getGender());
-        if (request.getAge() != null) profile.setAge(request.getAge());
-        if (request.getMajor() != null) profile.setMajor(request.getMajor());
-        if (request.getBiography() != null) profile.setBiography(request.getBiography());
-        if (request.getGraduationYear() != null) profile.setGraduationYear(request.getGraduationYear());
+        // 应用所有档案更新字段
+        if (request.getGender() != null) {
+            profile.setGender(request.getGender());
+        }
+        if (request.getAge() != null) {
+            profile.setAge(request.getAge());
+        }
+        if (request.getMajor() != null) {
+            profile.setMajor(request.getMajor());
+        }
+        if (request.getBiography() != null) {
+            profile.setBiography(request.getBiography());
+        }
+        if (request.getGraduationYear() != null) {
+            profile.setGraduationYear(request.getGraduationYear());
+        }
         
-        studentProfileService.saveOrUpdate(profile);
+        // 保存更新后的学生档案
+        boolean profileUpdated = studentProfileService.saveOrUpdate(profile);
+        if (!profileUpdated) {
+            throw new RuntimeException("更新学生档案失败");
+        }
         
-        // 更新申请状态
+        // 2. 更新申请记录状态为"教师已审核通过"
         request.setStatus("APPROVED");
         request.setReviewedAt(LocalDateTime.now());
-        request.setReviewerId(teacherId);
-        request.setReviewComment(reviewComment);
+        request.setReviewerId(teacher.getUserId());
+        request.setReviewComment(reviewComment != null && !reviewComment.trim().isEmpty() 
+            ? reviewComment.trim() 
+            : "审核通过");
         
-        return profileUpdateRequestService.updateById(request);
+        boolean requestUpdated = profileUpdateRequestService.updateById(request);
+        if (!requestUpdated) {
+            throw new RuntimeException("更新申请状态失败");
+        }
+        
+        return true;
     }
 
     @Override
@@ -375,14 +485,155 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
         
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("该申请已被处理");
+            throw new RuntimeException("该申请已被处理，当前状态：" + request.getStatus());
         }
         
+        // 验证该申请是否分配给当前教师
+        if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().equals(teacherId)) {
+            throw new RuntimeException("该申请未分配给您，无权审核");
+        }
+        
+        Teacher teacher = this.getById(teacherId);
+        if (teacher == null) {
+            throw new RuntimeException("教师信息不存在，无法执行审核");
+        }
+
+        // 验证必须填写退回原因
+        if (reviewComment == null || reviewComment.trim().isEmpty()) {
+            throw new RuntimeException("退回申请时必须填写原因");
+        }
+        
+        // 更新申请状态为"已退回"，学生档案不更新
         request.setStatus("REJECTED");
         request.setReviewedAt(LocalDateTime.now());
-        request.setReviewerId(teacherId);
-        request.setReviewComment(reviewComment != null ? reviewComment : "需要进一步完善");
+        request.setReviewerId(teacher.getUserId());
+        request.setReviewComment(reviewComment.trim());
+
+        boolean updated = profileUpdateRequestService.updateById(request);
+        if (!updated) {
+            throw new RuntimeException("更新申请状态失败");
+        }
         
-        return profileUpdateRequestService.updateById(request);
+        return true;
+    }
+
+    @Override
+    public TeacherProfileApprovalDetail getProfileApprovalDetail(Long teacherId, Long requestId) {
+        StudentProfileUpdateRequest request = profileUpdateRequestService.getById(requestId);
+        if (request == null) {
+            throw new RuntimeException("申请记录不存在");
+        }
+
+        if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().equals(teacherId)) {
+            throw new RuntimeException("该申请未分配给您，无权查看");
+        }
+
+        TeacherProfileApprovalDetail detail = new TeacherProfileApprovalDetail();
+        detail.setRequestId(request.getId());
+        detail.setStudentId(request.getStudentId());
+        SysUser studentUser = sysUserService.getById(request.getStudentId());
+        detail.setStudentName(studentUser != null ? studentUser.getFullName() : "未知学生");
+        detail.setStatus(request.getStatus());
+        detail.setSubmittedAt(request.getCreatedAt());
+        detail.setReviewedAt(request.getReviewedAt());
+        detail.setReviewerId(request.getReviewerId());
+        detail.setReviewComment(request.getReviewComment());
+
+        StudentProfile currentProfile = studentProfileService.getById(request.getStudentId());
+        detail.setCurrentProfile(toProfileSnapshot(currentProfile));
+        detail.setRequestedProfile(toProfileSnapshot(request));
+
+        return detail;
+    }
+
+    private TeacherProfileApprovalDetail.ProfileSnapshot toProfileSnapshot(StudentProfile profile) {
+        TeacherProfileApprovalDetail.ProfileSnapshot snapshot = new TeacherProfileApprovalDetail.ProfileSnapshot();
+        if (profile == null) {
+            return snapshot;
+        }
+        snapshot.setGender(profile.getGender());
+        snapshot.setAge(profile.getAge());
+        snapshot.setMajor(profile.getMajor());
+        snapshot.setBiography(profile.getBiography());
+        snapshot.setGraduationYear(profile.getGraduationYear());
+        return snapshot;
+    }
+
+    private TeacherProfileApprovalDetail.ProfileSnapshot toProfileSnapshot(StudentProfileUpdateRequest request) {
+        TeacherProfileApprovalDetail.ProfileSnapshot snapshot = new TeacherProfileApprovalDetail.ProfileSnapshot();
+        if (request == null) {
+            return snapshot;
+        }
+        snapshot.setGender(request.getGender());
+        snapshot.setAge(request.getAge());
+        snapshot.setMajor(request.getMajor());
+        snapshot.setBiography(request.getBiography());
+        snapshot.setGraduationYear(request.getGraduationYear());
+        return snapshot;
+    }
+
+    @Override
+    public SysUser getUserIfExists(Long userId) {
+        try {
+            if (userId == null) return null;
+            return sysUserService.getById(userId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private TeacherProfileResponse buildProfileResponse(Teacher teacher, SysUser teacherUser) {
+        TeacherProfileResponse response = new TeacherProfileResponse();
+        response.setTeacherId(teacher.getId());
+        response.setUserId(teacher.getUserId());
+        response.setName(teacherUser != null ? teacherUser.getFullName() : null);
+        response.setDepartment(teacher.getDepartment());
+        response.setMajor(teacher.getMajor());
+        response.setEmail(coalesce(teacher.getEmail(), teacherUser != null ? teacherUser.getEmail() : null));
+        response.setPhone(coalesce(teacher.getPhone(), teacherUser != null ? teacherUser.getPhone() : null));
+        response.setBiography(teacher.getBiography());
+        response.setFocus(teacher.getFocus());
+
+        String initialsSource = response.getName();
+        if (!StringUtils.hasText(initialsSource) && teacherUser != null) {
+            initialsSource = teacherUser.getUsername();
+        }
+        if (StringUtils.hasText(initialsSource)) {
+            response.setAvatarInitials(initialsSource.trim().substring(0, 1).toUpperCase());
+        } else {
+            response.setAvatarInitials("T");
+        }
+        return response;
+    }
+
+    private TeacherDashboardResponse.TeacherProfile toDashboardProfile(TeacherProfileResponse profile) {
+        TeacherDashboardResponse.TeacherProfile result = new TeacherDashboardResponse.TeacherProfile();
+        result.setTeacherId(profile.getTeacherId());
+        result.setUserId(profile.getUserId());
+        result.setName(StringUtils.hasText(profile.getName()) ? profile.getName() : "未知");
+        result.setDepartment(profile.getDepartment());
+        result.setMajor(profile.getMajor());
+        result.setEmail(profile.getEmail());
+        result.setPhone(profile.getPhone());
+        result.setBiography(StringUtils.hasText(profile.getBiography())
+            ? profile.getBiography()
+            : "就业指导教师，致力于帮助学生实现职业发展目标");
+        result.setFocus(StringUtils.hasText(profile.getFocus()) ? profile.getFocus() : "就业指导 | 职业规划");
+        result.setAvatarInitials(StringUtils.hasText(profile.getAvatarInitials()) ? profile.getAvatarInitials() : "T");
+        return result;
+    }
+
+    private String blankToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private String coalesce(String primary, String fallback) {
+        if (StringUtils.hasText(primary)) {
+            return primary.trim();
+        }
+        if (StringUtils.hasText(fallback)) {
+            return fallback.trim();
+        }
+        return null;
     }
 }

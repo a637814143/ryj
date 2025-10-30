@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getTeacherByUserId, getTeacherDashboard, approveProfileUpdate, rejectProfileUpdate, type TeacherPendingApproval } from '@/api/teacher'
 
 type ReviewAction = 'APPROVE' | 'REJECT'
 
+const router = useRouter()
 const teacherId = ref<number | null>(null)
 const loading = ref(true)
 const error = ref('')
@@ -43,7 +45,17 @@ const loadData = async () => {
   }
 }
 
+const openDetail = (requestId: number) => {
+  router.push({ name: 'teacher-approval-detail', params: { requestId: String(requestId) } })
+}
+
 const openDialog = (action: ReviewAction, requestId: number) => {
+  // 通过：直接提交，不弹窗
+  if (action === 'APPROVE') {
+    approveNow(requestId)
+    return
+  }
+  // 退回：弹窗填写原因
   dialog.value = { visible: true, action, requestId, comment: '' }
 }
 
@@ -52,20 +64,47 @@ const closeDialog = () => {
   dialog.value.comment = ''
 }
 
+// 直接通过（无弹窗）
+const approveNow = async (requestId: number) => {
+  if (!teacherId.value || !requestId) return
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    await approveProfileUpdate(teacherId.value, requestId, {})
+    approvals.value = approvals.value.filter((item) => item.requestId !== requestId)
+    alert('✅ 审核通过，学生档案已更新')
+    await loadData()
+  } catch (e) {
+    alert(e instanceof Error ? e.message : '提交失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
 const submit = async () => {
   if (!teacherId.value || !dialog.value.requestId) return
+  
+  // 退回时必须填写原因
+  if (dialog.value.action === 'REJECT' && !dialog.value.comment.trim()) {
+    alert('退回申请时必须填写原因')
+    return
+  }
+  
   submitting.value = true
   try {
     if (dialog.value.action === 'APPROVE') {
       const payload = dialog.value.comment.trim() ? { reviewComment: dialog.value.comment.trim() } : {}
       await approveProfileUpdate(teacherId.value, dialog.value.requestId, payload)
+      approvals.value = approvals.value.filter((item) => item.requestId !== dialog.value.requestId)
+      alert('✅ 审核通过，学生档案已更新')
     } else {
       await rejectProfileUpdate(teacherId.value, dialog.value.requestId, { reviewComment: dialog.value.comment.trim() })
+      approvals.value = approvals.value.filter((item) => item.requestId !== dialog.value.requestId)
+      alert('📝 已退回申请，学生将收到您的意见并可重新提交')
     }
     closeDialog()
     await loadData()
   } catch (e) {
-    // 简单提示
     alert(e instanceof Error ? e.message : '提交失败')
   } finally {
     submitting.value = false
@@ -144,8 +183,9 @@ const formatDateTime = (value: string | null) => {
                 </span>
               </div>
               <div class="actions">
-                <button class="btn approve" @click="openDialog('APPROVE', req.requestId)">通过</button>
-                <button class="btn reject" @click="openDialog('REJECT', req.requestId)">退回</button>
+                <button class="btn neutral" @click="openDetail(req.requestId)" title="查看档案改动详情">查看详情</button>
+                <button class="btn approve" @click="openDialog('APPROVE', req.requestId)" title="审核通过后学生档案立即更新">✅ 通过</button>
+                <button class="btn reject" @click="openDialog('REJECT', req.requestId)" title="退回让学生修改，档案不更新">📝 退回修改</button>
               </div>
             </div>
             <p class="brief">{{ (req.biography && req.biography.length > 180) ? (req.biography.slice(0,180) + '…') : (req.biography || '—') }}</p>
@@ -156,15 +196,17 @@ const formatDateTime = (value: string | null) => {
 
     <div v-if="dialog.visible" class="modal" @click.self="closeDialog">
       <div class="panel">
-        <h3>{{ dialog.action === 'APPROVE' ? '通过档案申请' : '退回档案申请' }}</h3>
-        <p class="hint">
-          {{ dialog.action === 'APPROVE' ? '可填写对学生的指导建议（可选）' : '请填写退回原因（必填）' }}
-        </p>
-        <textarea v-model="dialog.comment" :placeholder="dialog.action === 'APPROVE' ? '可选建议' : '必填退回原因'" />
+        <h3>📝 退回档案申请</h3>
+        <p class="hint">⚠️ 退回后学生档案不会更新，学生可根据您的意见修改后重新提交。请填写退回原因（必填）。</p>
+        <textarea 
+          v-model="dialog.comment" 
+          placeholder="例如：个人简介不够详细，请补充实习经历..." 
+          class="required"
+        />
         <div class="modal-actions">
           <button class="btn" @click="closeDialog">取消</button>
-          <button class="btn primary" :disabled="submitting || (dialog.action==='REJECT' && !dialog.comment.trim())" @click="submit">
-            {{ submitting ? '提交中...' : '确认' }}
+          <button class="btn primary" :disabled="submitting || !dialog.comment.trim()" @click="submit">
+            {{ submitting ? '提交中...' : '确认退回' }}
           </button>
         </div>
       </div>
@@ -199,6 +241,8 @@ const formatDateTime = (value: string | null) => {
 .meta { display:flex; flex-wrap:wrap; gap:.75rem; color:#64748b; font-size:.9rem; }
 .actions { display:flex; gap:.5rem; }
 .btn { border:none; border-radius:12px; padding:.5rem .9rem; font-weight:600; cursor:pointer; }
+.btn.neutral { background:rgba(59,130,246,.08); color:#1d4ed8; border:1px solid rgba(59,130,246,.2); }
+.btn.neutral:hover { background:rgba(59,130,246,.14); }
 .btn.approve { background: linear-gradient(135deg,#34d399,#059669); color:#fff; }
 .btn.reject { background: linear-gradient(135deg,#f97316,#ef4444); color:#fff; }
 .brief { margin:.75rem 0 0; color:#1f2937; }
@@ -206,10 +250,13 @@ const formatDateTime = (value: string | null) => {
 .modal { position:fixed; inset:0; display:grid; place-items:center; background:rgba(15,23,42,.35); backdrop-filter: blur(6px); z-index:50; }
 .panel { width:min(520px,92vw); background:#fff; border-radius:20px; padding:1.5rem; box-shadow:0 30px 80px rgba(15,23,42,.2); display:flex; flex-direction:column; gap:1rem; }
 .panel h3 { margin:0; font-size:1.25rem; }
-.hint { color:#64748b; margin:0; }
-textarea { min-height:120px; border:1px solid #cbd5e1; border-radius:12px; padding:.75rem 1rem; resize:vertical; }
+.hint { color:#64748b; margin:0; font-size:.95rem; line-height:1.6; }
+textarea { min-height:120px; border:1px solid #cbd5e1; border-radius:12px; padding:.75rem 1rem; resize:vertical; font-size:.95rem; }
+textarea.required { border-color:#f97316; }
+textarea:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.1); }
 .modal-actions { display:flex; justify-content:flex-end; gap:.75rem; }
 .btn.primary { background: linear-gradient(135deg,#2563eb,#7c3aed); color:#fff; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
 </style>
 
 

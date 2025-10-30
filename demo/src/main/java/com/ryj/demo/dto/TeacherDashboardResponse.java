@@ -31,6 +31,7 @@ public class TeacherDashboardResponse {
         private Long userId;
         private String name;
         private String department;
+        private String major;
         private String email;
         private String phone;
         private String biography;

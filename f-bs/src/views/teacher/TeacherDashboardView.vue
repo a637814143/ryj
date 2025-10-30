@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   approveProfileUpdate,
   getTeacherByUserId,
@@ -13,6 +13,7 @@ import {
 type ReviewAction = 'APPROVE' | 'REJECT'
 
 const route = useRoute()
+const router = useRouter()
 
 const teacherRecord = ref<TeacherRecord | null>(null)
 const dashboard = ref<TeacherDashboardResponse | null>(null)
@@ -40,6 +41,10 @@ const guidedStudents = computed(() => dashboard.value?.guidedStudents ?? [])
 const employerCollaborations = computed(() => dashboard.value?.employerCollaborations ?? [])
 const guidanceNotes = computed(() => dashboard.value?.recentGuidanceNotes ?? [])
 const studentActivities = computed(() => dashboard.value?.recentStudentActivities ?? [])
+
+const openApprovalDetail = (requestId: number) => {
+  router.push({ name: 'teacher-approval-detail', params: { requestId: String(requestId) } })
+}
 
 const approvalSubmitDisabled = computed(() => {
   if (submitting.value) return true
@@ -133,6 +138,12 @@ const showMessage = (type: 'success' | 'error', text: string) => {
 }
 
 const openReviewDialog = (action: ReviewAction, requestId: number) => {
+  // 通过：直接提交，无需弹窗
+  if (action === 'APPROVE') {
+    approveNow(requestId)
+    return
+  }
+  // 退回：打开弹窗填写原因
   reviewDialog.value = {
     visible: true,
     requestId,
@@ -147,6 +158,31 @@ const closeReviewDialog = () => {
   reviewDialog.value.requestId = null
 }
 
+// 直接通过（无弹窗）
+const approveNow = async (requestId: number) => {
+  if (!teacherRecord.value || !requestId) return
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    await approveProfileUpdate(teacherRecord.value.id, requestId, {})
+    // 即时更新本地数据，避免等待重新加载
+    if (dashboard.value) {
+      dashboard.value.pendingApprovals = dashboard.value.pendingApprovals.filter(
+        (req) => req.requestId !== requestId,
+      )
+      if (dashboard.value.overview && dashboard.value.overview.pendingApprovalCount > 0) {
+        dashboard.value.overview.pendingApprovalCount -= 1
+      }
+    }
+    showMessage('success', '已通过该学生的档案调整申请')
+    await loadDashboard(false)
+  } catch (err: any) {
+    showMessage('error', err?.message || '操作失败，请稍后再试')
+  } finally {
+    submitting.value = false
+  }
+}
+
 const submitReview = async () => {
   if (!teacherRecord.value || !reviewDialog.value.requestId) {
     return
@@ -159,11 +195,27 @@ const submitReview = async () => {
         ? { reviewComment: reviewDialog.value.comment.trim() }
         : {}
       await approveProfileUpdate(teacherRecord.value.id, reviewDialog.value.requestId, payload)
+      if (dashboard.value) {
+        dashboard.value.pendingApprovals = dashboard.value.pendingApprovals.filter(
+          (req) => req.requestId !== reviewDialog.value.requestId,
+        )
+        if (dashboard.value.overview && dashboard.value.overview.pendingApprovalCount > 0) {
+          dashboard.value.overview.pendingApprovalCount -= 1
+        }
+      }
       showMessage('success', '已通过该学生的档案调整申请')
     } else {
       await rejectProfileUpdate(teacherRecord.value.id, reviewDialog.value.requestId, {
         reviewComment: reviewDialog.value.comment.trim(),
       })
+      if (dashboard.value) {
+        dashboard.value.pendingApprovals = dashboard.value.pendingApprovals.filter(
+          (req) => req.requestId !== reviewDialog.value.requestId,
+        )
+        if (dashboard.value.overview && dashboard.value.overview.pendingApprovalCount > 0) {
+          dashboard.value.overview.pendingApprovalCount -= 1
+        }
+      }
       showMessage('success', '已退回该学生的档案申请')
     }
     closeReviewDialog()
@@ -376,7 +428,10 @@ onMounted(() => {
                   </div>
                   <p class="approval-brief">{{ shorten(request.biography, 140) }}</p>
                   <div class="approval-actions">
-                    <button type="button" class="action-btn approve" @click="openReviewDialog('APPROVE', request.requestId)">
+                    <button type="button" class="action-btn outline" @click="openApprovalDetail(request.requestId)">
+                      查看详情
+                    </button>
+                    <button type="button" class="action-btn approve" @click="approveNow(request.requestId)">
                       通过申请
                     </button>
                     <button type="button" class="action-btn reject" @click="openReviewDialog('REJECT', request.requestId)">
@@ -530,18 +585,12 @@ onMounted(() => {
       <div v-if="reviewDialog.visible" class="review-modal" @click.self="closeReviewDialog">
         <div class="review-modal__panel">
           <header>
-            <h3>{{ reviewDialog.action === 'APPROVE' ? '通过档案申请' : '退回档案申请' }}</h3>
-            <p>
-              {{
-                reviewDialog.action === 'APPROVE'
-                  ? '可为学生添加温馨提示，帮助其持续完善档案信息。'
-                  : '请给出退回原因，便于学生根据建议完善档案内容。'
-              }}
-            </p>
+            <h3>退回档案申请</h3>
+            <p>请给出退回原因，便于学生根据建议完善档案内容。</p>
           </header>
           <textarea
             v-model="reviewDialog.comment"
-            :placeholder="reviewDialog.action === 'APPROVE' ? '可选：填写对学生的指导建议' : '必填：说明退回原因与修改建议'"
+            placeholder="必填：说明退回原因与修改建议"
           ></textarea>
           <footer>
             <button type="button" class="btn btn--ghost" @click="closeReviewDialog">取消</button>
@@ -1027,6 +1076,16 @@ onMounted(() => {
   background: linear-gradient(135deg, #34d399, #059669);
   color: #fff;
   box-shadow: 0 12px 24px rgba(16, 185, 129, 0.25);
+}
+
+.action-btn.outline {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.action-btn.outline:hover {
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .action-btn.reject {

@@ -11,7 +11,7 @@ import {
   type StudentProfileUpdateRequest,
   type ProfileRequestStatus,
 } from '../api/student'
-import { searchTeachers, type TeacherSearchItem } from '../api/teacher'
+import { searchTeachers, type TeacherSearchItem, getAllHomeroomTeachers } from '../api/teacher'
 
 const router = useRouter()
 const route = useRoute()
@@ -41,8 +41,8 @@ const teacherLoading = ref(false)
 
 const statusLabels: Record<ProfileRequestStatus, string> = {
   PENDING: '待审核',
-  APPROVED: '已通过',
-  REJECTED: '已驳回',
+  APPROVED: '教师已审核通过',
+  REJECTED: '教师已驳回',
 }
 
 const pendingStatus = computed(() => currentPending.value?.status ?? null)
@@ -86,19 +86,17 @@ const populateFromApproved = () => {
 }
 
 const loadHomeroomTeachers = async () => {
-  if (!profileForm.major || !profileForm.major.trim()) {
-    homeroomTeachers.value = []
-    return
+    teacherLoading.value = true
+    try {
+      // 默认加载全部教师作为下拉候选；可支持按专业筛选
+      // homeroomTeachers.value = await searchTeachers({ major: profileForm.major.trim() })
+      homeroomTeachers.value = await getAllHomeroomTeachers();
+    } catch(e) {
+      homeroomTeachers.value = [];
+    } finally {
+      teacherLoading.value = false;
+    }
   }
-  teacherLoading.value = true
-  try {
-    homeroomTeachers.value = await searchTeachers({ major: profileForm.major.trim() })
-  } catch (e) {
-    homeroomTeachers.value = []
-  } finally {
-    teacherLoading.value = false
-  }
-}
 
 // 兼容不同后端字段，格式化老师显示名称
 const formatTeacherName = (t: any) => {
@@ -147,6 +145,13 @@ const handleSubmit = async () => {
     formError.value = '请先选择学生ID'
     return
   }
+  
+  // 验证必填项
+  if (!profileForm.homeroomTeacherId) {
+    formError.value = '请选择班主任老师'
+    return
+  }
+  
   formSaving.value = true
   formError.value = ''
   formMessage.value = ''
@@ -160,7 +165,9 @@ const handleSubmit = async () => {
       graduationYear: profileForm.graduationYear ?? null,
       reviewerId: profileForm.homeroomTeacherId ?? undefined,
     }
-    if (currentPending.value) {
+    
+    // 如果当前有待审核申请，则更新；如果是被退回的申请，则重新提交
+    if (currentPending.value && hasPending.value) {
       await updateStudentProfileRequest(currentPending.value.id, payload)
       formMessage.value = '已更新待审核的档案申请'
     } else {
@@ -207,7 +214,10 @@ watch(
   { immediate: true }
 )
 
-onMounted(() => {
+onMounted(async () => {
+  // 页面加载时先加载班主任列表
+  await loadHomeroomTeachers()
+  
   if (!route.query.studentId) {
     // 首先尝试从登录信息中获取学生ID
     const userInfoStr = localStorage.getItem('userInfo')
@@ -219,7 +229,7 @@ onMounted(() => {
           studentId.value = id
           studentIdInput.value = String(id)
           localStorage.setItem('currentStudentId', String(id))
-          loadProfile(id)
+          await loadProfile(id)
           router.replace({ name: 'student-profile', query: { studentId: String(id) } })
           return
         }
@@ -233,20 +243,15 @@ onMounted(() => {
     if (stored) {
       studentId.value = stored
       studentIdInput.value = String(stored)
-      loadProfile(stored)
+      await loadProfile(stored)
       router.replace({ name: 'student-profile', query: { studentId: String(stored) } })
     }
   }
 })
 
 const hasPending = computed(() => pendingStatus.value === 'PENDING')
-// 监听专业变化，动态加载班主任候选
-watch(
-  () => profileForm.major,
-  async () => {
-    await loadHomeroomTeachers()
-  }
-)
+const isRejected = computed(() => pendingStatus.value === 'REJECTED')
+const canEdit = computed(() => !hasPending.value || isRejected.value)
 </script>
 
 <template>
@@ -310,6 +315,7 @@ watch(
             <div>
               <h2>提交/修改档案申请</h2>
               <p v-if="hasPending">当前有待审核申请，可在审核前进行修改或撤回。</p>
+              <p v-else-if="isRejected">您的档案申请已被退回，请根据老师意见修改后重新提交。</p>
               <p v-else>填写以下信息提交新的档案更新申请。</p>
             </div>
             <div class="card__actions">

@@ -74,6 +74,27 @@ export type TeacherPendingApproval = {
   biography: string | null
 }
 
+export type TeacherProfileSnapshot = {
+  gender: string | null
+  age: number | null
+  major: string | null
+  biography: string | null
+  graduationYear: number | null
+}
+
+export type TeacherProfileApprovalDetail = {
+  requestId: number
+  studentId: number
+  studentName: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  submittedAt: string | null
+  reviewedAt: string | null
+  reviewerId: number | null
+  reviewComment: string | null
+  currentProfile: TeacherProfileSnapshot | null
+  requestedProfile: TeacherProfileSnapshot | null
+}
+
 export type TeacherEmployerCollaboration = {
   employerId: number
   companyName: string
@@ -139,6 +160,10 @@ export async function rejectProfileUpdate(teacherId: number, requestId: number, 
   })
 }
 
+export async function getTeacherProfileApprovalDetail(teacherId: number, requestId: number) {
+  return request<TeacherProfileApprovalDetail>(`/api/teachers/${teacherId}/requests/${requestId}`)
+}
+
 // 教师列表检索（按院系/专业筛选班主任候选）
 export type TeacherSearchItem = {
   id: number
@@ -156,6 +181,10 @@ export async function searchTeachers(params: { department?: string; major?: stri
   if (params.keyword) searchParams.set('keyword', params.keyword)
   const qs = searchParams.toString()
   return request<TeacherSearchItem[]>(`/api/teachers${qs ? `?${qs}` : ''}`)
+}
+
+export async function getAllHomeroomTeachers() {
+  return request<TeacherSearchItem[]>(`/api/teachers/all`)
 }
 
 // 教师个人信息获取/更新

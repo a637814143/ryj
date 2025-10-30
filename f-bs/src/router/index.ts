@@ -27,6 +27,7 @@ import TeacherGuidanceView from '../views/teacher/TeacherGuidanceView.vue'
 import TeacherStatisticsView from '../views/teacher/TeacherStatisticsView.vue'
 import TeacherApprovalsView from '../views/teacher/TeacherApprovalsView.vue'
 import TeacherProfileView from '../views/teacher/TeacherProfileView.vue'
+import TeacherProfileApprovalDetailView from '../views/teacher/TeacherProfileApprovalDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -162,6 +163,12 @@ const router = createRouter({
       path: '/teacher/approvals',
       name: 'teacher-approvals',
       component: TeacherApprovalsView,
+      meta: { requiresAuth: true, role: 'TEACHER' },
+    },
+    {
+      path: '/teacher/approvals/:requestId',
+      name: 'teacher-approval-detail',
+      component: TeacherProfileApprovalDetailView,
       meta: { requiresAuth: true, role: 'TEACHER' },
     },
     {

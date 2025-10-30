@@ -215,6 +215,9 @@ CREATE TABLE IF NOT EXISTS teacher (
     department  VARCHAR(120) COMMENT '所属院系或部门',
     email       VARCHAR(120) COMMENT '教师联系邮箱',
     phone       VARCHAR(30) COMMENT '教师联系电话',
+    major       VARCHAR(120) COMMENT '指导专业方向',
+    focus       VARCHAR(255) COMMENT '研究/指导方向',
+    biography   TEXT COMMENT '教师个人简介',
     FOREIGN KEY (user_id) REFERENCES sys_user(id)
 ) COMMENT='教师信息表';
 

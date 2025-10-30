@@ -125,5 +125,9 @@ public class StudentProfileController {
         target.setMajor(source.getMajor());
         target.setBiography(source.getBiography());
         target.setGraduationYear(source.getGraduationYear());
+        // 新增：关联班主任ID（由前端表单传入）
+        if (source.getReviewerId() != null) {
+            target.setHomeroomTeacherId(source.getReviewerId());
+        }
     }
 }

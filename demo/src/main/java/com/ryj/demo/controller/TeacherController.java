@@ -4,10 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryj.demo.common.ApiResponse;
 import com.ryj.demo.dto.TeacherDashboardResponse;
+import com.ryj.demo.dto.TeacherProfileResponse;
+import com.ryj.demo.dto.TeacherProfileUpdateRequest;
 import com.ryj.demo.entity.Teacher;
 import com.ryj.demo.service.TeacherService;
 import jakarta.validation.Valid;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,9 +29,8 @@ public class TeacherController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody Teacher teacher) {
-        teacher.setId(id);
-        return ApiResponse.success(teacherService.updateById(teacher));
+    public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody TeacherProfileUpdateRequest request) {
+        return ApiResponse.success(teacherService.updateProfile(id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -55,8 +55,8 @@ public class TeacherController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Teacher> detail(@PathVariable Long id) {
-        return ApiResponse.success(teacherService.getById(id));
+    public ApiResponse<TeacherProfileResponse> detail(@PathVariable Long id) {
+        return ApiResponse.success(teacherService.getProfile(id));
     }
 
     /**

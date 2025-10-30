@@ -2,15 +2,27 @@ package com.ryj.demo.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ryj.demo.dto.TeacherDashboardResponse;
+import com.ryj.demo.dto.TeacherProfileResponse;
+import com.ryj.demo.dto.TeacherProfileUpdateRequest;
 import com.ryj.demo.entity.Teacher;
 
 public interface TeacherService extends IService<Teacher> {
-    
+
     /**
      * 通过用户ID获取教师信息
      */
     Teacher getByUserId(Long userId);
-    
+
+    /**
+     * 获取教师档案信息
+     */
+    TeacherProfileResponse getProfile(Long teacherId);
+
+    /**
+     * 更新教师档案
+     */
+    boolean updateProfile(Long teacherId, TeacherProfileUpdateRequest request);
+
     /**
      * 获取教师仪表板数据
      */
